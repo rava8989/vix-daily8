@@ -1,75 +1,437 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>VIX Dashboard</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Time Off / Shift Change Request</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    .result { margin-top: 20px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
-    p { margin: 0.5em 0; }
+    :root{
+      --ink:#111;
+      --line:#111;
+      --red:#b11226;
+    }
+    body{ margin:0; font-family:"Times New Roman", Times, serif; color:var(--ink); background:#fff; }
+    .ui{
+      padding:12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:flex-end;
+      border-bottom:1px solid #ddd;
+      font-family: Arial, sans-serif;
+    }
+    .ui label{ display:block; font-size:12px; color:#333; margin-bottom:6px; }
+    .ui select,.ui input{
+      padding:10px;
+      border:1px solid #ccc;
+      border-radius:10px;
+      min-width:220px;
+      background:#fff;
+    }
+    .ui button{
+      padding:10px 14px;
+      border:1px solid #111;
+      border-radius:10px;
+      background:#fff;
+      cursor:pointer;
+    }
+    .ui button:hover{ opacity:.85; }
+
+    .pageWrap{
+      display:flex;
+      justify-content:center;
+      padding:12px;
+    }
+
+    /* Print: EXACT letter landscape with no scaling */
+    @page { size: Letter landscape; margin: 0; }
+    @media print{
+      .ui{ display:none; }
+      .pageWrap{ padding:0; }
+      body{ background:#fff; }
+    }
+
+    /* keep SVG crisp */
+    svg{ width: 11in; height: 8.5in; border:0; }
+    .tSmall{ font-size:12px; }
+    .tMed{ font-size:14px; }
+    .tBig{ font-size:18px; font-weight:700; }
+    .tBold{ font-weight:700; }
+    .red{ fill: var(--red); }
+    .ink{ fill: var(--ink); }
+    .line{ stroke: var(--line); stroke-width:2; }
+    .thin{ stroke: var(--line); stroke-width:1.2; }
+    .box{ fill:none; stroke:var(--line); stroke-width:1.2; }
+    .fillNone{ fill:none; }
+    .changedCell{ stroke:#111; stroke-width:2.2; fill:none; }
   </style>
 </head>
 <body>
-  <h1>📈 VIX Dashboard</h1>
-  <button onclick="fetchVIXData()">🔄 Update VIX Data</button>
-  <div class="result" id="vixResults">Fetching data...</div>
 
-  <script>
-    const API_KEY = '2248f0c8a4de4025846b3093bdd1d641';
+<div class="ui">
+  <div>
+    <label>Me</label>
+    <select id="me"></select>
+  </div>
+  <div>
+    <label>Swap With</label>
+    <select id="them"></select>
+  </div>
+  <div>
+    <label>Month</label>
+    <input id="month" type="month" value="2026-02"/>
+  </div>
+  <div>
+    <label>Cycle Start (day 1 of 42-day loop)</label>
+    <input id="cycleStart" type="date" value="2026-01-01"/>
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button id="build">Build</button>
+    <button id="print">Print / Save PDF</button>
+    <button id="reset">Reset Requested</button>
+  </div>
+  <div style="font-size:12px; color:#444; max-width:520px;">
+    Swap: click a day on <b>Me</b> then a day on <b>Them</b>. Requested grid updates + marks changed days.
+  </div>
+</div>
 
-    async function fetchVIXData() {
-      const res = await fetch(`https://api.twelvedata.com/time_series?symbol=VIX&interval=1min&outputsize=5000&apikey=${API_KEY}`);
-      const data = await res.json();
+<div class="pageWrap">
+  <svg id="form" viewBox="0 0 1100 850" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">
+    <!-- PAGE BACKGROUND -->
+    <rect x="0" y="0" width="1100" height="850" fill="#fff"/>
 
-      if (!data.values) {
-        document.getElementById("vixResults").innerText = "❌ Error loading data.";
-        return;
-      }
+    <!-- RIGHT-SIDE VERTICAL NOTICE + TITLE -->
+    <text x="1048" y="120" class="tSmall red" transform="rotate(90 1048 120)">THIS REQUEST IS NOT APPROVED UNTIL YOU RECEIVE A SIGNED COPY OF THIS FORM</text>
+    <text x="1080" y="190" class="tBig ink" transform="rotate(90 1080 190)">TIME OFF OR SHIFT CHANGE REQUEST</text>
+    <text x="1048" y="780" class="tSmall red" transform="rotate(90 1048 780)">DATE: ________________________________</text>
 
-      const values = data.values;
+    <!-- TOP RIGHT FIELDS -->
+    <text x="800" y="78" class="tSmall ink">TO: SUPERVISOR</text>
+    <line x1="880" y1="80" x2="1040" y2="80" class="thin"/>
+    <text x="800" y="108" class="tSmall ink">FROM:</text>
+    <line x1="880" y1="110" x2="1040" y2="110" class="thin"/>
+    <text x="800" y="138" class="tSmall ink">MONTH:</text>
+    <line x1="880" y1="140" x2="1040" y2="140" class="thin"/>
 
-      function findTime(dateStr, timeStr) {
-        return values.find(v => v.datetime.startsWith(dateStr) && v.datetime.endsWith(timeStr));
-      }
+    <!-- LEFT-SIDE VERTICAL RED RULE -->
+    <text x="40" y="120" class="tSmall red" transform="rotate(-90 40 120)">
+      *** ALL REQUESTS WILL ONLY BE APPROVED AND SCHEDULED ON TUESDAY &amp; THURSDAY ***
+    </text>
+    <text x="20" y="760" class="tSmall red" transform="rotate(-90 20 760)">
+      IT IS YOUR RESPONSIBILITY TO FOLLOW UP ON THIS REQUEST
+    </text>
 
-      const today = new Date();
-      const yest = new Date(today);
-      yest.setDate(today.getDate() - 1);
+    <!-- MIDDLE FORM FIELDS (LEFT COLUMN) -->
+    <!-- We match the visible labels from your photo -->
+    <text x="90" y="150" class="tSmall ink">NAME</text>
+    <line x1="140" y1="152" x2="470" y2="152" class="thin"/>
 
-      const format = (d) => d.toISOString().split("T")[0];
+    <text x="90" y="198" class="tSmall ink">ALL EMPLOYEES MUST SIGN</text>
+    <line x1="260" y1="200" x2="470" y2="200" class="thin"/>
 
-      const todayStr = format(today);
-      const yestStr = format(yest);
+    <text x="90" y="238" class="tSmall ink">REASON FOR REQUEST</text>
+    <line x1="230" y1="240" x2="470" y2="240" class="thin"/>
 
-      const tOpen = findTime(todayStr, '09:30:00');
-      const yOpen = findTime(yestStr, '09:30:00');
-      const yClose = findTime(yestStr, '16:00:00');
+    <text x="90" y="278" class="tSmall ink">LIST PRESENT TIME BALANCE</text>
+    <text x="90" y="314" class="tSmall ink">COMP. HOURS</text>
+    <line x1="190" y1="316" x2="320" y2="316" class="thin"/>
+    <text x="340" y="314" class="tSmall ink">VAC. HOURS</text>
+    <line x1="430" y1="316" x2="560" y2="316" class="thin"/>
 
-      if (!tOpen || !yOpen || !yClose) {
-        document.getElementById("vixResults").innerText =
-          "⚠️ Not enough data yet. Make sure it's after 9:30 AM and 4:00 PM Eastern Time.";
-        return;
-      }
+    <text x="90" y="360" class="tSmall ink">YOUR REQUEST HAS BEEN</text>
+    <text x="90" y="396" class="tSmall ink">APPROVED</text>
+    <line x1="160" y1="398" x2="290" y2="398" class="thin"/>
+    <text x="320" y="396" class="tSmall ink">REJECTED</text>
+    <line x1="400" y1="398" x2="530" y2="398" class="thin"/>
 
-      const tOpenVal = parseFloat(tOpen.open);
-      const yOpenVal = parseFloat(yOpen.open);
-      const yCloseVal = parseFloat(yClose.close);
+    <text x="90" y="440" class="tSmall ink">REASON FOR REJECTION</text>
+    <line x1="230" y1="442" x2="560" y2="442" class="thin"/>
 
-      const diffOpen = (yOpenVal - tOpenVal).toFixed(2);
-      const diffClose = (yCloseVal - tOpenVal).toFixed(2);
+    <text x="90" y="760" class="tSmall ink">ENTERED INTO COMPUTER</text>
+    <line x1="240" y1="762" x2="430" y2="762" class="thin"/>
+    <text x="520" y="760" class="tSmall ink">SUPERVISOR</text>
+    <line x1="600" y1="762" x2="840" y2="762" class="thin"/>
+    <text x="860" y="760" class="tSmall ink">DATE</text>
+    <line x1="900" y1="762" x2="1040" y2="762" class="thin"/>
 
-      document.getElementById("vixResults").innerHTML = `
-        <p><strong>📅 Today's Open (9:30 AM):</strong> ${tOpenVal}</p>
-        <p><strong>📅 Yesterday's Open (9:30 AM):</strong> ${yOpenVal}</p>
-        <p><strong>📅 Yesterday's Close (4:00 PM):</strong> ${yCloseVal}</p>
-        <hr>
-        <p><strong>🧮 Yesterday Open - Today Open:</strong> ${diffOpen}</p>
-        <p><strong>🧮 Yesterday Close - Today Open:</strong> ${diffClose}</p>
-      `;
+    <!-- SCHEDULE GRIDS TITLES -->
+    <text x="585" y="210" class="tSmall ink tBold" transform="rotate(-90 585 210)">MY PRESENT SCHEDULE IS</text>
+    <text x="585" y="520" class="tSmall ink tBold" transform="rotate(-90 585 520)">TIME OFF OR CHANGE PERIOD REQUESTED</text>
+
+    <!-- TWO GRIDS (present + requested) -->
+    <g id="gridPresent"></g>
+    <g id="gridRequested"></g>
+
+    <!-- NAME LINES NEAR GRIDS (like the form) -->
+    <text x="520" y="110" class="tSmall ink tBold">NAME</text>
+    <line x1="570" y1="112" x2="780" y2="112" class="thin"/>
+    <text x="520" y="420" class="tSmall ink tBold">NAME</text>
+    <line x1="570" y1="422" x2="780" y2="422" class="thin"/>
+
+    <!-- Form date stamp -->
+    <text x="800" y="40" class="tSmall ink">DATE:</text>
+    <text id="topDate" x="840" y="40" class="tSmall ink"></text>
+  </svg>
+</div>
+
+<script>
+/* =========================
+   YOU EDIT THESE
+========================= */
+const employees = [
+  { name: "Rodriguez, Roger", slot: 1 },
+  { name: "Joseph, George R", slot: 2 },
+  { name: "Ramanrane, Ashram", slot: 3 },
+  { name: "Segovia, Eduardo M", slot: 4 },
+  { name: "Victoria, Robert", slot: 5 },
+  { name: "Bouaziz, Abdelghani", slot: 6 },
+];
+
+// Slot 1 42-day loop pattern — MUST be exactly 42 items.
+// Replace with your real rotating shift loop.
+const pattern42 = Array.from({length:42}, (_,i)=>{
+  const dow=i%7;               // 0 Sun .. 6 Sat
+  if(dow===0||dow===6) return "RDO";
+  return "B";
+});
+
+/* =========================
+   CORE
+========================= */
+const CYCLE_LEN=42;
+const msPerDay=24*60*60*1000;
+
+const meSel=document.getElementById("me");
+const themSel=document.getElementById("them");
+const monthInp=document.getElementById("month");
+const cycleInp=document.getElementById("cycleStart");
+
+function pad2(n){ return String(n).padStart(2,"0"); }
+function isoOf(y,m,d){ return `${y}-${pad2(m)}-${pad2(d)}`; }
+
+function normalize(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+function daysBetween(aISO,bISO){
+  const a=normalize(aISO), b=normalize(bISO);
+  return Math.floor((b-a)/msPerDay);
+}
+
+function codeForDate(dateISO, slot, cycleStartISO){
+  const days=daysBetween(cycleStartISO,dateISO);
+  const offset=(slot-1)*7;
+  const idx=((days+offset)%CYCLE_LEN + CYCLE_LEN)%CYCLE_LEN;
+  return pattern42[idx];
+}
+
+function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+
+function fillSelect(el){
+  el.innerHTML=employees.map((e,i)=>`<option value="${i}">${e.name} (slot ${e.slot})</option>`).join("");
+}
+
+fillSelect(meSel);
+fillSelect(themSel);
+meSel.value="0";
+themSel.value="1";
+
+let base=null;
+let requested=null;
+let pick=null; // {side:"me"|"them", day:int}
+
+function drawGrid(targetG, x, y, cellW, cellH, dim, map, changedSet, tag){
+  // Layout: one header row (day numbers) + one row for codes
+  // This matches the paper's right-side daily boxes concept while staying perfectly printable.
+  const g=document.getElementById(targetG);
+  g.innerHTML="";
+
+  // outer frame
+  const totalW = cellW*dim;
+  const totalH = cellH*2;
+
+  const outer = document.createElementNS("http://www.w3.org/2000/svg","rect");
+  outer.setAttribute("x", x);
+  outer.setAttribute("y", y);
+  outer.setAttribute("width", totalW);
+  outer.setAttribute("height", totalH);
+  outer.setAttribute("class","box");
+  g.appendChild(outer);
+
+  for(let d=1; d<=dim; d++){
+    const cx = x + (d-1)*cellW;
+
+    // header cell
+    const r1=document.createElementNS("http://www.w3.org/2000/svg","rect");
+    r1.setAttribute("x", cx);
+    r1.setAttribute("y", y);
+    r1.setAttribute("width", cellW);
+    r1.setAttribute("height", cellH);
+    r1.setAttribute("class","box");
+    g.appendChild(r1);
+
+    const tN=document.createElementNS("http://www.w3.org/2000/svg","text");
+    tN.setAttribute("x", cx + cellW/2);
+    tN.setAttribute("y", y + cellH*0.72);
+    tN.setAttribute("text-anchor","middle");
+    tN.setAttribute("class","tSmall ink");
+    tN.textContent = d;
+    g.appendChild(tN);
+
+    // code cell
+    const r2=document.createElementNS("http://www.w3.org/2000/svg","rect");
+    r2.setAttribute("x", cx);
+    r2.setAttribute("y", y + cellH);
+    r2.setAttribute("width", cellW);
+    r2.setAttribute("height", cellH);
+    r2.setAttribute("class","box");
+    r2.dataset.tag = tag;
+    r2.dataset.day = String(d);
+    g.appendChild(r2);
+
+    // changed outline
+    if (changedSet && changedSet.has(`${tag}:${d}`)){
+      const ch=document.createElementNS("http://www.w3.org/2000/svg","rect");
+      ch.setAttribute("x", cx+0.8);
+      ch.setAttribute("y", y+cellH+0.8);
+      ch.setAttribute("width", cellW-1.6);
+      ch.setAttribute("height", cellH-1.6);
+      ch.setAttribute("class","changedCell");
+      g.appendChild(ch);
     }
 
-    fetchVIXData();
-  </script>
+    const code = map[d] ?? "";
+    const tC=document.createElementNS("http://www.w3.org/2000/svg","text");
+    tC.setAttribute("x", cx + cellW/2);
+    tC.setAttribute("y", y + cellH + cellH*0.72);
+    tC.setAttribute("text-anchor","middle");
+    tC.setAttribute("class","tSmall ink");
+    tC.textContent = code;
+    g.appendChild(tC);
+  }
+}
+
+function build(){
+  if(pattern42.length!==42){
+    alert("pattern42 must be exactly 42 items. Yours is: "+pattern42.length);
+    return;
+  }
+  const me=employees[Number(meSel.value)];
+  const them=employees[Number(themSel.value)];
+  const [yyyy,mm]=monthInp.value.split("-").map(Number);
+  const dim=daysInMonth(yyyy,mm);
+  const cycleStart=cycleInp.value;
+
+  base={yyyy,mm,dim,cycleStart,me,them, meMap:{}, themMap:{}};
+  requested={ meMap:{}, themMap:{}, changed:new Set() };
+
+  for(let d=1; d<=dim; d++){
+    const iso=isoOf(yyyy,mm,d);
+    const a=codeForDate(iso, me.slot, cycleStart);
+    const b=codeForDate(iso, them.slot, cycleStart);
+    base.meMap[d]=a;
+    base.themMap[d]=b;
+    requested.meMap[d]=a;
+    requested.themMap[d]=b;
+  }
+
+  // Put names on the form lines
+  const nameTopLine = document.querySelector('line[x1="570"][y1="112"]'); // just to keep existence
+  // We write text over the name lines:
+  upsertText("nameTop", 585, 108, base.me.name);
+  upsertText("nameBottom", 585, 418, base.me.name + "  (swap with: " + base.them.name + ")");
+
+  // Month field text (top-right)
+  upsertText("monthText", 885, 136, `${base.yyyy}-${pad2(base.mm)}`);
+
+  // Date stamp
+  document.getElementById("topDate").textContent = new Date().toLocaleDateString();
+
+  // Draw grids (positioned to match the paper layout)
+  // Tweakable constants for perfect alignment on your printer:
+  const cellW = 15.5;  // width per day box
+  const cellH = 18;    // height per row
+
+  // Present grid location
+  drawGrid("gridPresent", 520, 135, cellW, cellH, dim, base.meMap, null, "present");
+
+  // Requested grid location
+  drawGrid("gridRequested", 520, 445, cellW, cellH, dim, requested.meMap, requested.changed, "requested");
+
+  wireGridClicks();
+}
+
+function upsertText(id,x,y,txt){
+  let t=document.getElementById(id);
+  if(!t){
+    t=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("id", id);
+    t.setAttribute("class","tSmall ink");
+    document.getElementById("form").appendChild(t);
+  }
+  t.setAttribute("x", x);
+  t.setAttribute("y", y);
+  t.textContent = txt;
+}
+
+function wireGridClicks(){
+  // Click-to-swap between ME and THEM:
+  // We do swaps on the underlying requested maps, then redraw grids.
+  // (We don't allow "move" here; only swap — exactly what you said.)
+  const svg=document.getElementById("form");
+  svg.onclick = (ev)=>{
+    const target = ev.target;
+    if(!(target instanceof SVGElement)) return;
+    if(target.tagName !== "rect") return;
+    const tag = target.dataset.tag;
+    const dayStr = target.dataset.day;
+    if(!tag || !dayStr) return;
+
+    // We only let swaps happen using the requested maps of BOTH people:
+    // Click day on ME (presented as requested grid values) then day on THEM (not printed on form but exists in state)
+    // Since your paper form prints only YOUR present/requested, we still support swapping against the other person’s schedule.
+    // We'll interpret: any click in requested grid selects a day for "Me". To pick "Them", you use Shift+Click.
+    const day = Number(dayStr);
+    const isThemPick = ev.shiftKey; // Shift-click = pick from THEM
+
+    const side = isThemPick ? "them" : "me";
+
+    if(!pick){
+      pick = {side, day};
+      return;
+    }
+    if(pick.side === side){
+      pick = {side, day};
+      return;
+    }
+
+    // swap
+    const dMe = (pick.side==="me") ? pick.day : day;
+    const dTh = (pick.side==="them") ? pick.day : day;
+
+    const tmp = requested.meMap[dMe];
+    requested.meMap[dMe] = requested.themMap[dTh];
+    requested.themMap[dTh] = tmp;
+
+    requested.changed.add(`requested:${dMe}`);
+
+    // redraw requested grid with changed highlights
+    const cellW = 15.5, cellH = 18;
+    drawGrid("gridRequested", 520, 445, cellW, cellH, base.dim, requested.meMap, requested.changed, "requested");
+
+    pick = null;
+  };
+}
+
+document.getElementById("build").addEventListener("click", build);
+document.getElementById("print").addEventListener("click", ()=>window.print());
+document.getElementById("reset").addEventListener("click", ()=>{
+  if(!base) return;
+  requested.meMap = {...base.meMap};
+  requested.themMap = {...base.themMap};
+  requested.changed = new Set();
+  const cellW = 15.5, cellH = 18;
+  drawGrid("gridRequested", 520, 445, cellW, cellH, base.dim, requested.meMap, requested.changed, "requested");
+});
+
+build(); // build on load
+</script>
 </body>
 </html>
