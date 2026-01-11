@@ -6,9 +6,11 @@
   <title>Rotating Shift Swap Tool</title>
   <style>
     :root{
-      --bg:#fff; --ink:#111; --muted:#666; --grid:#111; --hdr:#0b0b0b;
+      --bg:#fff; --ink:#111; --muted:#666; --grid:#111;
+      --hdr:#2b2b2b;        /* was black; now greyish */
+      --hdr2:#3a3a3a;
       --a:#cfcfcf; --b:#f8f8f8; --c:#dedede;
-      --rdo:#0b0b0b; --rdoInk:#fff;
+      --rdo:#1f1f1f; --rdoInk:#fff;
       --mdo:#bfbfbf; --mdoInk:#111;
       --pick:#ffe08a; --swap:#98d7ff;
       --warn:#b30000; --ok:#0a7a00;
@@ -55,9 +57,8 @@
     .colDay{width:36px;min-width:36px;max-width:36px;}
 
     thead .dayTop{background:var(--hdr);color:#fff;font-weight:900;}
-    thead .dow{background:#111;color:#fff;font-weight:800;font-size:11px;}
+    thead .dow{background:var(--hdr2);color:#fff;font-weight:800;font-size:11px;}
     thead .band{background:var(--hdr);color:#fff;text-transform:uppercase;letter-spacing:.5px;}
-    thead .cov{background:#fff;color:#111;font-weight:900;font-size:11px;}
 
     tbody tr.personRow td{background:#f3f3f3;}
     tbody tr.personRow:nth-child(2n) td{background:#eaeaea;}
@@ -74,7 +75,6 @@
     td.code[data-code="MDO"]{background:var(--mdo);color:var(--mdoInk);}
     td.code[data-code*="/"]{background:#fff;font-weight:1000;box-shadow:inset 0 0 0 2px #000;}
     td.code.pick{outline:3px solid #000;background:var(--pick)!important;color:#000!important;}
-    td.code.swapTarget{outline:3px solid #000;background:var(--swap)!important;color:#000!important;}
     td.code.changed{box-shadow:inset 0 0 0 3px var(--warn);}
 
     .help{margin-top:10px;border:2px solid var(--grid);border-radius:var(--radius);padding:10px 12px;background:#fff;box-shadow:var(--shadow);font-size:12px;color:#111;line-height:1.35;font-family:var(--mono);}
@@ -101,7 +101,7 @@
         <select id="mode">
           <option value="view">View</option>
           <option value="swap">Swap</option>
-          <option value="double">Double (ME only → choose MDO)</option>
+          <option value="double">Double (ME only → pick MDO)</option>
         </select>
       </div>
 
@@ -129,7 +129,6 @@
       <span class="pill" id="statusPick">PICK: —</span>
       <span class="pill" id="statusInfo">INFO: —</span>
       <div class="spacer"></div>
-      <span class="pill" id="statusCoverage">COVERAGE: —</span>
     </div>
 
     <div class="legend">
@@ -148,8 +147,8 @@
   <div class="wrap">
     <div class="help">
       SWAP: click a ME cell then a THEM cell (must be same Sun–Sat week).<br/>
-      DOUBLE: click a ME weekday cell to create A/B or B/C, then click another ME weekday cell in the SAME week to place MDO.<br/><br/>
-      Rule added (your request): you cannot move A/B/C (or doubles) onto a weekend cell if that weekend is baseline RDO for that person.
+      DOUBLE: click a ME weekday cell to create A/B or B/C (or C/A if already), then click another ME weekday cell in the SAME week to place MDO.<br/><br/>
+      Weekend rule: you cannot move A/B/C (or doubles) onto a Sat/Sun cell if that weekend day is baseline RDO for that person.
     </div>
   </div>
 
@@ -176,24 +175,21 @@ const EMPLOYEES = [
   { name:"Kingston, Joseph C.", slot:1 },
   { name:"Rodriguez, Roger", slot:1 },
   { name:"Joseph, George R", slot:2 },
-  { name:"Ramnarine, Ashram", slot:2 },      // fixed spelling already
+  { name:"Ramnarine, Ashram", slot:2 },
   { name:"Segovia, Eduardo M", slot:3 },
   { name:"Victoria, Robert", slot:3 },
   { name:"Bouaziz, Abdelghani", slot:4 },
-  { name:"Gragossian, Alan", slot:4 },       // FIXED from Alani -> Alan
+  { name:"Gragossian, Alan", slot:4 },   // fixed
   { name:"Handel, Joseph", slot:5 },
   { name:"Rakhmanov, Ravshan", slot:5 },
   { name:"Rodriguez, Alexander", slot:6 },
   { name:"Svenjak, Mark", slot:6 }
 ];
 
-/* Treat R as regular B tour for coverage */
-function normalizeForCoverage(token){ return token === "R" ? "B" : token; }
-
 /* =========================
    Persistence
    ========================= */
-const LS_KEY = "rotShiftSwapTool_v2_fixed";
+const LS_KEY = "rotShiftSwapTool_v3_nocoverage_fixedDoubles";
 function loadState(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"null"); }catch(e){ return null; } }
 function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 
@@ -245,7 +241,7 @@ const state = loadState() || {
   me: EMPLOYEES[0]?.name || "",
   them: EMPLOYEES[1]?.name || "",
   overrides: {},            // { person: { isoDate: "CODE" } }
-  pendingMDO: null          // { person, weekStartISO }
+  pendingMDO: null          // { weekStartISO }
 };
 
 function getOverride(person, iso){ return state.overrides?.[person]?.[iso] ?? null; }
@@ -261,50 +257,46 @@ function codeFor(person, iso){ return getOverride(person, iso) ?? baseCode(perso
 function isOff(code){ return code==="RDO" || code==="MDO"; }
 function isWorkLike(code){ return !!code && !isOff(code); }
 
-/* Coverage counting (2 A / 2 B / 2 C every day) */
-function countTokens(code){
-  const out={A:0,B:0,C:0};
-  if(!code || isOff(code)) return out;
-  const parts = code.split("/").map(s=>s.trim()).filter(Boolean);
-  for(let p of parts){
-    p=normalizeForCoverage(p);
-    if(p==="A") out.A++;
-    else if(p==="B") out.B++;
-    else if(p==="C") out.C++;
-  }
-  return out;
-}
-function dayCoverage(iso){
-  const total={A:0,B:0,C:0};
-  for(const emp of EMPLOYEES){
-    const add=countTokens(codeFor(emp.name, iso));
-    total.A+=add.A; total.B+=add.B; total.C+=add.C;
-  }
-  return total;
-}
-function coverageOk(c){ return c.A===2 && c.B===2 && c.C===2; }
-
-/* Week rule: 5 workdays and 2 offdays (RDO/MDO) */
-function weekCounts(person, weekStartISO){
-  const ws=parseISODate(weekStartISO);
-  let workDays=0, offDays=0;
-  for(let i=0;i<7;i++){
-    const d=new Date(ws.getFullYear(), ws.getMonth(), ws.getDate()+i);
-    const iso=isoDate(d);
-    const c=codeFor(person, iso);
-    if(isOff(c)) offDays++; else workDays++;
-  }
-  return {workDays, offDays};
-}
-
 /* User rule: cannot move A/B/C (or doubles) onto a weekend cell if that weekend is baseline RDO for that person */
 function violatesWeekendBaselineRDO(person, iso, incomingCode){
   const d=parseISODate(iso);
   if(!isWeekend(d)) return false;
   const base = baseCode(person, iso);
-  if(base !== "RDO") return false;              // only care when baseline weekend is RDO
-  if(isOff(incomingCode)) return false;         // still off: fine
-  return true;                                  // incoming is work-like -> block
+  if(base !== "RDO") return false;       // only block when baseline weekend is RDO
+  if(isOff(incomingCode)) return false;  // off stays off: fine
+  return true;                           // incoming work-like -> block
+}
+
+/* =========================
+   Week math for your rules
+   =========================
+   - shift units per week must = 5
+     (normal day 1, double 2, off 0)
+   - off-days per week must = 2 + (# doubles in that week)
+*/
+function shiftUnits(code){
+  if(!code || isOff(code)) return 0;
+  if(code.includes("/")) return 2;
+  return 1;
+}
+function countWeek(person, weekStartISO){
+  const ws=parseISODate(weekStartISO);
+  let units=0, off=0, doubles=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(ws.getFullYear(), ws.getMonth(), ws.getDate()+i);
+    const iso=isoDate(d);
+    const c=codeFor(person, iso);
+    units += shiftUnits(c);
+    if(isOff(c)) off++;
+    if(c && c.includes("/")) doubles++;
+  }
+  return {units, off, doubles};
+}
+function validateWeek(person, weekStartISO){
+  const w = countWeek(person, weekStartISO);
+  const needOff = 2 + w.doubles;
+  const ok = (w.units === 5) && (w.off === needOff);
+  return { ok, ...w, needOff };
 }
 
 /* =========================
@@ -322,26 +314,20 @@ function validateSwap(me, them, isoMe, isoThem){
 
   if(errors.length) return {ok:false, errors};
 
-  // simulate swap and check (a) day coverage for both dates (b) week 5/2 rule for both people
+  // simulate swap and validate week rules for both people (only the affected week)
   const aMe = codeFor(me, isoMe);
   const aThem = codeFor(them, isoThem);
 
-  // temporary apply
   setOverride(me, isoMe, aThem);
   setOverride(them, isoThem, aMe);
 
-  const cov1 = dayCoverage(isoMe);
-  const cov2 = (isoMe===isoThem) ? cov1 : dayCoverage(isoThem);
-  if(!coverageOk(cov1)) errors.push(`Coverage breaks on ${isoMe} (needs 2/2/2).`);
-  if(!coverageOk(cov2)) errors.push(`Coverage breaks on ${isoThem} (needs 2/2/2).`);
-
   const ws = weekStartSundayISO(isoMe);
-  const cMe = weekCounts(me, ws);
-  const cTh = weekCounts(them, ws);
-  if(!(cMe.workDays===5 && cMe.offDays===2)) errors.push(`ME week ${ws} must be 5 shifts + 2 off (now ${cMe.workDays}/${cMe.offDays}).`);
-  if(!(cTh.workDays===5 && cTh.offDays===2)) errors.push(`THEM week ${ws} must be 5 shifts + 2 off (now ${cTh.workDays}/${cTh.offDays}).`);
+  const wMe = validateWeek(me, ws);
+  const wTh = validateWeek(them, ws);
 
-  // revert temp
+  if(!wMe.ok) errors.push(`ME week ${ws} invalid (units=${wMe.units}, off=${wMe.off}, doubles=${wMe.doubles}, needOff=${wMe.needOff}).`);
+  if(!wTh.ok) errors.push(`THEM week ${ws} invalid (units=${wTh.units}, off=${wTh.off}, doubles=${wTh.doubles}, needOff=${wTh.needOff}).`);
+
   delOverride(me, isoMe);
   delOverride(them, isoThem);
 
@@ -359,18 +345,22 @@ function doSwap(me, them, isoMe, isoThem){
   return {ok:true, errors:[]};
 }
 
-/* Double: ME weekday -> A/B or B/C; then pick MDO weekday in same week */
+/* Double flow:
+   1) click ME weekday -> make it a double (A/B or B/C, if B ask)
+   2) then click another ME weekday in same week -> set to MDO
+   Validate week rules after placing MDO.
+*/
 function proposeDouble(existing){
   if(!existing) return null;
   if(existing.includes("/")) return null; // already double
-  const norm = normalizeForCoverage(existing.trim());
-  if(norm==="A") return "A/B";
-  if(norm==="C") return "B/C";
-  if(norm==="B") return "__CHOOSE__";
+  const t=existing.trim().toUpperCase();
+  if(t==="A") return "A/B";
+  if(t==="C") return "B/C";
+  if(t==="B" || t==="R") return "__CHOOSE__";
   return null;
 }
 function chooseForB(){
-  const choice = window.prompt('B day double: type "A/B" or "B/C"', "A/B");
+  const choice = window.prompt('Double on B/R: type "A/B" or "B/C"', "A/B");
   if(choice===null) return null;
   const cleaned=choice.trim().toUpperCase();
   return (cleaned==="A/B" || cleaned==="B/C") ? cleaned : null;
@@ -378,10 +368,9 @@ function chooseForB(){
 function canPlaceMDO(person, iso){
   const d=parseISODate(iso);
   if(!isWeekday(d)) return false;
-  const c=codeFor(person, iso);
-  // allow converting B/R/RDO/MDO on weekdays into MDO (simple)
-  const n=normalizeForCoverage(c.trim());
-  return (n==="B" || c==="RDO" || c==="MDO");
+  // you can place MDO on a weekday cell by converting it to MDO
+  // BUT not if that would violate your week-unit rule (we validate after)
+  return true;
 }
 
 /* =========================
@@ -396,7 +385,6 @@ const themSel=document.getElementById("themSel");
 const statusMode=document.getElementById("statusMode");
 const statusPick=document.getElementById("statusPick");
 const statusInfo=document.getElementById("statusInfo");
-const statusCoverage=document.getElementById("statusCoverage");
 
 function setPill(el, text, kind){
   el.textContent=text;
@@ -423,8 +411,7 @@ function monthTitle(d){
 let pick=null; // {person, iso}
 
 function render(){
-  // controls
-  startMonthInput.value = state.startMonthISO; // YYYY-MM
+  startMonthInput.value = state.startMonthISO;
   showMonthsSel.value = String(state.showMonths);
   modeSel.value = state.mode;
   buildSelectOptions(meSel, state.me);
@@ -433,25 +420,16 @@ function render(){
   setPill(statusMode, `MODE: ${state.mode.toUpperCase()}`);
   setPill(statusPick, pick ? `PICK: ${pick.person} @ ${pick.iso}` : "PICK: —");
   setPill(statusInfo, state.pendingMDO ? `INFO: Pick MDO day (ME) in week of ${state.pendingMDO.weekStartISO}` : "INFO: —");
+
   document.getElementById("genFormBtn").disabled = true;
 
   monthsWrap.innerHTML="";
   const start=parseISOMonth(state.startMonthISO);
 
-  let anyBad=false;
-
   for(let i=0;i<Number(state.showMonths);i++){
     const mDate=addMonths(start,i);
     monthsWrap.appendChild(renderMonthPanel(mDate));
-
-    const y=mDate.getFullYear(), m0=mDate.getMonth(), dim=daysInMonth(y,m0);
-    for(let d=1; d<=dim; d++){
-      const iso=isoDate(new Date(y,m0,d));
-      if(!coverageOk(dayCoverage(iso))) anyBad=true;
-    }
   }
-
-  setPill(statusCoverage, anyBad ? "COVERAGE: NOT 2/2/2 (see COV row)" : "COVERAGE: OK 2/2/2", anyBad ? "bad":"ok");
 }
 
 function renderMonthPanel(monthDate){
@@ -518,37 +496,14 @@ function renderMonthPanel(monthDate){
     r2.appendChild(th);
   }
 
-  // Row 3: Coverage
-  const r3=document.createElement("tr");
-  thead.appendChild(r3);
-
-  const thC1=document.createElement("th");
-  thC1.className="stickyLeft colName cov";
-  thC1.textContent="COV";
-  r3.appendChild(thC1);
-
-  const thC2=document.createElement("th");
-  thC2.className="stickyLeft2 colSlot cov";
-  thC2.textContent="(A/B/C)";
-  r3.appendChild(thC2);
-
-  for(let d=1; d<=dim; d++){
-    const iso=isoDate(new Date(y,m0,d));
-    const cov=dayCoverage(iso);
-    const th=document.createElement("th");
-    th.className="colDay cov";
-    th.textContent=`${cov.A}/${cov.B}/${cov.C}`;
-    if(!coverageOk(cov)){ th.style.color="var(--warn)"; th.style.fontWeight="1000"; }
-    r3.appendChild(th);
-  }
-
   const tbody=document.createElement("tbody");
   table.appendChild(tbody);
 
-  // Put ME and THEM first (stacked) for swapping view
+  // Put ME and THEM first (stacked)
   if(state.me && state.them && state.me!==state.them){
-    tbody.appendChild(renderPersonRow(monthDate, state.me, dim, true, "ME"));
-    tbody.appendChild(renderPersonRow(monthDate, state.them, dim, true, "THEM"));
+    tbody.appendChild(renderPersonRow(monthDate, state.me, dim, "ME"));
+    tbody.appendChild(renderPersonRow(monthDate, state.them, dim, "THEM"));
+
     const div=document.createElement("tr");
     const td=document.createElement("td");
     td.colSpan=2+dim;
@@ -560,13 +515,13 @@ function renderMonthPanel(monthDate){
   }
 
   for(const emp of EMPLOYEES){
-    tbody.appendChild(renderPersonRow(monthDate, emp.name, dim, false, ""));
+    tbody.appendChild(renderPersonRow(monthDate, emp.name, dim, ""));
   }
 
   return panel;
 }
 
-function renderPersonRow(monthDate, person, dim, isTop, tag){
+function renderPersonRow(monthDate, person, dim, tag){
   const y=monthDate.getFullYear(), m0=monthDate.getMonth();
   const emp=getEmp(person);
 
@@ -584,8 +539,7 @@ function renderPersonRow(monthDate, person, dim, isTop, tag){
   tr.appendChild(tdSlot);
 
   for(let d=1; d<=dim; d++){
-    const date=new Date(y,m0,d);
-    const iso=isoDate(date);
+    const iso=isoDate(new Date(y,m0,d));
     const c=codeFor(person, iso);
 
     const td=document.createElement("td");
@@ -599,8 +553,6 @@ function renderPersonRow(monthDate, person, dim, isTop, tag){
     td.setAttribute("data-code", c);
 
     if(getOverride(person, iso)!==null) td.classList.add("changed");
-
-    // highlight pick / swap target in swap mode
     if(pick && pick.person===person && pick.iso===iso) td.classList.add("pick");
 
     td.addEventListener("click", ()=>onCellClick(td));
@@ -620,7 +572,7 @@ function onCellClick(td){
 
   if(mode==="view") return;
 
-  // If pending MDO (double flow)
+  // pending MDO for double flow
   if(mode==="double" && state.pendingMDO){
     if(person !== state.me){
       setPill(statusInfo, "INFO: MDO must be on ME row", "bad");
@@ -631,24 +583,24 @@ function onCellClick(td){
       return;
     }
     if(!canPlaceMDO(state.me, iso)){
-      setPill(statusInfo, "INFO: MDO must be weekday (Mon–Fri) and B/R/RDO/MDO", "bad");
+      setPill(statusInfo, "INFO: MDO must be weekday (Mon–Fri)", "bad");
       return;
     }
+    const d=parseISODate(iso);
+    if(!isWeekday(d)){
+      setPill(statusInfo, "INFO: MDO must be Mon–Fri", "bad");
+      return;
+    }
+
+    const prev = codeFor(state.me, iso);
     setOverride(state.me, iso, "MDO");
 
-    // validate week + day coverage after placing MDO
-    const ws=state.pendingMDO.weekStartISO;
-    const cMe=weekCounts(state.me, ws);
-    if(!(cMe.workDays===5 && cMe.offDays===2)){
+    const ws = state.pendingMDO.weekStartISO;
+    const v = validateWeek(state.me, ws);
+    if(!v.ok){
       // revert
-      delOverride(state.me, iso);
-      setPill(statusInfo, `INFO: Week ${ws} must be 5 shifts + 2 off (now ${cMe.workDays}/${cMe.offDays})`, "bad");
-      return;
-    }
-    // also ensure coverage that day stays 2/2/2
-    if(!coverageOk(dayCoverage(iso))){
-      delOverride(state.me, iso);
-      setPill(statusInfo, `INFO: Coverage breaks on ${iso} (needs 2/2/2)`, "bad");
+      setOverride(state.me, iso, prev);
+      setPill(statusInfo, `INFO: Week ${ws} invalid (units=${v.units}, off=${v.off}, doubles=${v.doubles}, needOff=${v.needOff})`, "bad");
       return;
     }
 
@@ -661,7 +613,6 @@ function onCellClick(td){
   }
 
   if(mode==="swap"){
-    // only ME/THEM rows
     if(person !== state.me && person !== state.them){
       setPill(statusInfo, "INFO: Click only ME/THEM rows", "bad");
       return;
@@ -669,7 +620,6 @@ function onCellClick(td){
 
     if(!pick){
       pick={person, iso};
-      setPill(statusPick, `PICK: ${pick.person} @ ${pick.iso}`);
       saveState();
       render();
       return;
@@ -677,7 +627,7 @@ function onCellClick(td){
 
     // second click must be the other person
     if(pick.person === person){
-      pick={person, iso}; // just re-pick
+      pick={person, iso}; // re-pick
       saveState();
       render();
       return;
@@ -700,7 +650,6 @@ function onCellClick(td){
   }
 
   if(mode==="double"){
-    // only ME row
     if(person !== state.me){
       setPill(statusInfo, "INFO: Double can only be created on ME row", "bad");
       return;
@@ -711,13 +660,13 @@ function onCellClick(td){
       return;
     }
 
-    // also honor the "baseline weekend RDO" rule (not relevant here because weekday)
     const existing=codeFor(state.me, iso);
     const prop=proposeDouble(existing);
     if(prop===null){
       setPill(statusInfo, "INFO: Cannot double this cell", "bad");
       return;
     }
+
     let finalCode=prop;
     if(prop==="__CHOOSE__"){
       const chosen=chooseForB();
@@ -728,18 +677,10 @@ function onCellClick(td){
       finalCode=chosen;
     }
 
-    // place the double
     setOverride(state.me, iso, finalCode);
 
-    // validate coverage that day
-    if(!coverageOk(dayCoverage(iso))){
-      delOverride(state.me, iso);
-      setPill(statusInfo, `INFO: Coverage breaks on ${iso} (needs 2/2/2)`, "bad");
-      return;
-    }
-
-    // require MDO in same week
-    state.pendingMDO = { person: state.me, weekStartISO: weekStartSundayISO(iso) };
+    // Now require MDO in same week; do NOT validate yet (because week will be invalid until MDO is placed)
+    state.pendingMDO = { weekStartISO: weekStartSundayISO(iso) };
     pick=null;
     saveState();
     setPill(statusInfo, `INFO: Double set (${finalCode}). Now pick MDO weekday in same week.`, "ok");
@@ -766,7 +707,6 @@ document.getElementById("thisBtn").addEventListener("click", ()=>{
   state.pendingMDO=null; pick=null; saveState(); render();
 });
 startMonthInput.addEventListener("change", ()=>{
-  // input gives YYYY-MM
   state.startMonthISO = startMonthInput.value || isoMonth(new Date());
   state.pendingMDO=null; pick=null; saveState(); render();
 });
@@ -802,7 +742,7 @@ document.getElementById("resetBtn").addEventListener("click", ()=>{
   render();
 });
 
-/* Print form disabled for now (we’ll wire the exact supervisor form later) */
+/* Print form still disabled for now */
 document.getElementById("genFormBtn").addEventListener("click", ()=>{});
 
 /* =========================
