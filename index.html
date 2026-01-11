@@ -13,14 +13,11 @@
       --hdr2:#1b1b1b;
       --paper:#ffffff;
 
-      /* cell fills like your sheet */
       --fillWhite:#ffffff;
       --fillGray:#d9d9d9;
       --fillDark:#2a2a2a;
 
       --accentRed:#b10014;
-
-      /* outlines */
       --pick:#000;
       --chg:#000;
     }
@@ -179,7 +176,6 @@
     }
     td.blank{ background:#fff; cursor:default; }
 
-    /* alternate week shading like paper */
     tr.w0 td.cell{ background:#f1f1f1; }
     tr.w1 td.cell{ background:#e6e6e6; }
 
@@ -201,17 +197,15 @@
       letter-spacing:.3px;
     }
 
-    /* code backgrounds */
-    .A{ background:var(--fillDark); color:#fff; }     /* night */
-    .B{ background:var(--fillWhite); color:#111; }    /* day */
-    .C{ background:var(--fillGray); color:#111; }     /* eve */
+    .A{ background:var(--fillDark); color:#fff; }
+    .B{ background:var(--fillWhite); color:#111; }
+    .C{ background:var(--fillGray); color:#111; }
     .RDO{ background:var(--fillDark); color:#fff; }
     .MDO{ background:#bfbfbf; color:#111; }
     .R{ background:#ededed; color:#111; }
     .HOL{ background:#ffe8ea; color:var(--accentRed); }
     .COMP,.PE,.SICK,.IOD,.DIF{ background:#e9f2ff; color:#111; }
 
-    /* swap visuals */
     .picked{ outline:4px solid var(--pick); outline-offset:-4px; }
     .changed{ box-shadow: inset 0 0 0 4px var(--chg); }
 
@@ -237,18 +231,9 @@
       border-color:#b10014;
       color:#b10014;
     }
-
-    .row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-      margin-top:10px;
-    }
-
-    .small{ font-size:12px; font-weight:800; color:#333; }
   </style>
 </head>
+
 <body>
 <header>
   <div class="controls">
@@ -334,14 +319,12 @@ Rules enforced (basic):
 • If a week has NO time-off codes (HOL/COMP/PE/SICK/IOD/DIF), it must contain exactly 5 shifts (A/B/C/R) and 2 RDO
 • Swap is done by clicking one day on ME + one day on THEM
 • HOL/COMP/PE/SICK/IOD/DIF are treated as “time-off modifiers” (they don’t define the baseline loop)
-
-NOTE: Holiday-move rules (HOL sliding to next weekday B, and “R day cannot receive moved HOL unless swapped”) are supported in swap validation later — baseline lock ignores HOL so the 6-week loop stays clean.
   </div>
 </main>
 
 <script>
 /* =========================================================
-   1) EDIT THIS LIST to match your rotating shift mid-section
+   EDIT THIS LIST to match your rotating shift mid-section
    ========================================================= */
 const EMPLOYEES = [
   // SLOT 1
@@ -369,23 +352,13 @@ const EMPLOYEES = [
   { name: "Svenjak, Mark", slot: 6 },
 ];
 
-/* =========================================================
-   2) Storage keys
-   ========================================================= */
 const K_BASELINE = "pa_rot_baseline_42";
-const K_SWAPS = "pa_rot_swaps"; // stores requested schedule diffs
+const K_SWAPS = "pa_rot_swaps";
 const K_BASELINE_LOCKED = "pa_rot_baseline_locked";
 
-/* =========================================================
-   3) Code sets
-   ========================================================= */
 const TIME_OFF = new Set(["HOL","COMP","PE","SICK","IOD","DIF"]);
 const WORK = new Set(["A","B","C","R"]);
-const OFF = new Set(["RDO","MDO"]);
 
-/* =========================================================
-   4) Date helpers
-   ========================================================= */
 const pad2 = (n)=>String(n).padStart(2,"0");
 const isoDate = (y,m,d)=>`${y}-${pad2(m)}-${pad2(d)}`;
 const daysInMonth = (y,m)=>new Date(y,m,0).getDate();
@@ -399,7 +372,7 @@ const daysBetween = (aISO,bISO)=>Math.floor((startOfDay(bISO)-startOfDay(aISO))/
 
 function buildMonthCells(y,m){
   const dim = daysInMonth(y,m);
-  const firstDow = new Date(y,m-1,1).getDay(); // 0 Sun
+  const firstDow = new Date(y,m-1,1).getDay();
   const cells = [];
   for(let i=0;i<firstDow;i++) cells.push(null);
   for(let d=1; d<=dim; d++) cells.push(d);
@@ -411,18 +384,11 @@ function weekKeyForISO(iso){
   const dow = dt.getDay();
   dt.setDate(dt.getDate()-dow);
   dt.setHours(0,0,0,0);
-  return dt.toISOString().slice(0,10); // sunday
+  return dt.toISOString().slice(0,10);
 }
 const DOW = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
 
-/* =========================================================
-   5) Baseline loop (42 days) + cycle anchor
-   ---------------------------------------------------------
-   We lock baseline from Jan–Mar 2026 by majority rule.
-   Until locked, we use a temporary placeholder so UI works.
-   ========================================================= */
 const DEFAULT_BASELINE_42 = [
-  // placeholder (you will lock from Jan–Mar so this is irrelevant long term)
   "RDO","B","B","B","B","B","RDO",
   "RDO","A","A","A","A","A","RDO",
   "RDO","C","C","C","C","C","RDO",
@@ -431,7 +397,7 @@ const DEFAULT_BASELINE_42 = [
   "RDO","C","C","C","C","C","RDO",
 ];
 
-const CYCLE_START = "2026-01-04"; // Sunday anchor used for indexing (works with lock process)
+const CYCLE_START = "2026-01-04";
 const CYCLE_LEN = 42;
 
 function norm(code){
@@ -451,17 +417,14 @@ function loadBaseline(){
   }
   return { locked:false, arr:[...DEFAULT_BASELINE_42] };
 }
-
 function saveBaseline(arr){
   localStorage.setItem(K_BASELINE, JSON.stringify(arr));
   localStorage.setItem(K_BASELINE_LOCKED, "1");
 }
-
 function resetBaseline(){
   localStorage.removeItem(K_BASELINE);
   localStorage.removeItem(K_BASELINE_LOCKED);
 }
-
 function codeFromBaseline(dateISO, slot, baseline42){
   const days = daysBetween(CYCLE_START, dateISO);
   const offset = (slot-1)*7;
@@ -469,9 +432,6 @@ function codeFromBaseline(dateISO, slot, baseline42){
   return baseline42[idx];
 }
 
-/* =========================================================
-   6) Swaps storage (requested overrides)
-   ========================================================= */
 function loadSwaps(){
   const raw = localStorage.getItem(K_SWAPS);
   if(!raw) return {};
@@ -489,9 +449,6 @@ function resetSwaps(){
   localStorage.removeItem(K_SWAPS);
 }
 
-/* =========================================================
-   7) UI state
-   ========================================================= */
 const elStartMonth = document.getElementById("startMonth");
 const elMonthsShown = document.getElementById("monthsShown");
 const elMode = document.getElementById("mode");
@@ -512,7 +469,7 @@ const leftHint = document.getElementById("leftHint");
 const rightHint = document.getElementById("rightHint");
 
 let pageOffset = 0;
-let pick = null; // { side:'me'|'them', iso }
+let pick = null;
 
 function initSelectors(){
   elMe.innerHTML = "";
@@ -545,9 +502,6 @@ function getMonthsWindow(){
   return months;
 }
 
-/* =========================================================
-   8) Build schedule maps (base + requested overrides)
-   ========================================================= */
 function buildBaseScheduleForPerson(personIndex, months, baseline42){
   const person = EMPLOYEES[personIndex];
   const map = new Map();
@@ -562,8 +516,6 @@ function buildBaseScheduleForPerson(personIndex, months, baseline42){
 }
 
 function applyOverrides(personIndex, baseMap, swapsObj){
-  // swapsObj structure:
-  // { "<personIndex>": { "<iso>": "<code>", ... }, ... }
   const out = new Map(baseMap);
   const key = String(personIndex);
   if(swapsObj[key]){
@@ -586,9 +538,6 @@ function clearOverride(swapsObj, personIndex, iso){
   }
 }
 
-/* =========================================================
-   9) Validation (basic weekly rules)
-   ========================================================= */
 function validatePerson(personIndex, months, requestedMap){
   const errs = [];
   const isos = [];
@@ -597,7 +546,7 @@ function validatePerson(personIndex, months, requestedMap){
     for(let d=1; d<=dim; d++) isos.push(isoDate(y,m,d));
   }
 
-  const buckets = new Map(); // weekKey -> [iso...]
+  const buckets = new Map();
   for(const iso of isos){
     const wk = weekKeyForISO(iso);
     const arr = buckets.get(wk) || [];
@@ -621,16 +570,13 @@ function validatePerson(personIndex, months, requestedMap){
   return errs;
 }
 
-/* =========================================================
-   10) Rendering calendar cards
-   ========================================================= */
 function cellClass(code){
   const c = norm(code);
   const ok = ["A","B","C","RDO","MDO","R","HOL","COMP","PE","SICK","IOD","DIF"];
   return ok.includes(c) ? c : "";
 }
 
-function renderMonth(personIndex, month, baseMap, reqMap, swapsObj, side){
+function renderMonth(personIndex, month, baseMap, reqMap, side){
   const {y,m} = month;
   const {cells} = buildMonthCells(y,m);
 
@@ -659,12 +605,11 @@ function renderMonth(personIndex, month, baseMap, reqMap, swapsObj, side){
       const code = reqMap.get(iso);
       const base = baseMap.get(iso);
 
-      const picked = (pick && pick.side===side && pick.iso===iso) ? "picked" : "";
-
-      const changed = (norm(code) !== norm(base)) ? "changed" : "";
+      const pickedCls = (pick && pick.side===side && pick.iso===iso) ? "picked" : "";
+      const changedCls = (norm(code) !== norm(base)) ? "changed" : "";
 
       html += `
-        <td class="cell ${picked} ${changed}" data-side="${side}" data-person="${personIndex}" data-iso="${iso}">
+        <td class="cell ${pickedCls} ${changedCls}" data-side="${side}" data-person="${personIndex}" data-iso="${iso}">
           <div class="dayNum">${day}</div>
           <div class="code ${cellClass(code)}">${norm(code)}</div>
         </td>
@@ -677,9 +622,6 @@ function renderMonth(personIndex, month, baseMap, reqMap, swapsObj, side){
   return html;
 }
 
-/* =========================================================
-   11) Swap behavior
-   ========================================================= */
 function doSwap(isoMe, isoThem){
   const meIdx = Number(elMe.value);
   const thIdx = Number(elThem.value);
@@ -697,52 +639,21 @@ function doSwap(isoMe, isoThem){
   const a = norm(reqMe.get(isoMe));
   const b = norm(reqTh.get(isoThem));
 
-  // swap them in overrides (store absolute code results)
   setOverride(swapsObj, meIdx, isoMe, b);
   setOverride(swapsObj, thIdx, isoThem, a);
 
-  // if override equals base, remove override (keeps storage clean)
   if(norm(b) === norm(baseMe.get(isoMe))) clearOverride(swapsObj, meIdx, isoMe);
   if(norm(a) === norm(baseTh.get(isoThem))) clearOverride(swapsObj, thIdx, isoThem);
 
   saveSwaps(swapsObj);
 }
 
-/* =========================================================
-   12) Baseline Lock (Jan–Mar 2026)
-   ---------------------------------------------------------
-   Uses majority across:
-   - Slot 1 people (both)
-   - Jan, Feb, Mar 2026
-   And ignores TIME_OFF modifiers when deciding baseline.
-   ========================================================= */
 function lockBaselineJanToMar(){
-  // We "simulate" extracting from Jan–Mar by using the CURRENT baseline
-  // as a starting point, then the user’s existing swaps (if any) are ignored.
-  //
-  // In your deployment, after you input Jan–Mar paper corrections (optional),
-  // the baseline becomes authoritative.
-  //
-  // Practical: we lock the DEFAULT pattern as baseline if not already locked.
-  //
-  // If you want this to be 100% photo-derived, you’d need OCR or manual entry,
-  // which we’re not doing inside this page.
-  //
-  // Supervisor-proof: once locked, schedules become consistent and swaps are diffs.
-
-  // For now: lock whatever baseline is currently loaded (placeholder or updated by you).
+  // locks whatever baseline is currently loaded
   const b = loadBaseline().arr;
   saveBaseline(b);
 }
 
-/* =========================================================
-   13) Export Form (simple)
-   ---------------------------------------------------------
-   This generates a PRINTABLE form page in a new window
-   matching your “Time Off or Shift Change Request” layout
-   (not the schedule sheet).
-   You can print to PDF or save as JPG via browser print.
-   ========================================================= */
 function openFormPrint(){
   const meIdx = Number(elMe.value);
   const thIdx = Number(elThem.value);
@@ -753,17 +664,13 @@ function openFormPrint(){
   const months = getMonthsWindow();
   const swapsObj = loadSwaps();
 
-  // Use first visible month as form month
   const month = months[0];
   const {y,m} = month;
   const dim = daysInMonth(y,m);
 
   const baseMe = buildBaseScheduleForPerson(meIdx, months, baseline);
-  const baseTh = buildBaseScheduleForPerson(thIdx, months, baseline);
   const reqMe = applyOverrides(meIdx, baseMe, swapsObj);
-  const reqTh = applyOverrides(thIdx, baseTh, swapsObj);
 
-  // Build 1..31 grid lines (like your form)
   function gridLine(map, maxDay){
     let out = "";
     for(let d=1; d<=31; d++){
@@ -822,8 +729,6 @@ function openFormPrint(){
           font-size:11px; font-weight:900;
         }
         .bottom{ position:absolute; bottom:0.35in; left:0; right:0; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:18px; }
-        .bottom .field{ }
-        .small{ font-size:11px; font-weight:900; }
         .dateTop{ position:absolute; right:0; top:0; font-weight:900; font-size:12px; }
       </style>
     </head><body>
@@ -837,7 +742,7 @@ function openFormPrint(){
           <div class="field">TO: SUPERVISOR<div class="line"></div></div>
           <div class="field">FROM:<div class="line"></div></div>
           <div class="field">MONTH:<div class="line">${y}-${String(m).padStart(2,"0")}</div></div>
-          <div class="field"> </div>
+          <div class="field"></div>
         </div>
 
         <div class="section">
@@ -860,15 +765,12 @@ function openFormPrint(){
           <div class="field">DATE<div class="line"></div></div>
         </div>
       </div>
-      <script>window.print();</script>
+      <script>window.print();<\/script>
     </body></html>
   `);
   w.document.close();
 }
 
-/* =========================================================
-   14) Render
-   ========================================================= */
 function render(){
   const months = getMonthsWindow();
   const mode = elMode.value;
@@ -896,19 +798,15 @@ function render(){
 
   const swapsObj = loadSwaps();
 
-  // Base schedules for this window
   const baseMe = buildBaseScheduleForPerson(meIdx, months, baseline);
   const baseTh = buildBaseScheduleForPerson(thIdx, months, baseline);
 
-  // Requested schedules include overrides
   const reqMe = applyOverrides(meIdx, baseMe, swapsObj);
   const reqTh = applyOverrides(thIdx, baseTh, swapsObj);
 
-  // Render months
-  elLeftMonths.innerHTML = months.map(mm => renderMonth(meIdx, mm, baseMe, reqMe, swapsObj, "me")).join("");
-  elRightMonths.innerHTML = months.map(mm => renderMonth(thIdx, mm, baseTh, reqTh, swapsObj, "them")).join("");
+  elLeftMonths.innerHTML = months.map(mm => renderMonth(meIdx, mm, baseMe, reqMe, "me")).join("");
+  elRightMonths.innerHTML = months.map(mm => renderMonth(thIdx, mm, baseTh, reqTh, "them")).join("");
 
-  // Validation
   const errs = [
     ...validatePerson(meIdx, months, reqMe),
     ...validatePerson(thIdx, months, reqTh),
@@ -927,9 +825,6 @@ function render(){
   }
 }
 
-/* =========================================================
-   15) Events
-   ========================================================= */
 document.getElementById("prev").addEventListener("click", ()=>{ pageOffset = Math.max(0, pageOffset-1); pick=null; render(); });
 document.getElementById("next").addEventListener("click", ()=>{ pageOffset = pageOffset+1; pick=null; render(); });
 document.getElementById("thisMonth").addEventListener("click", ()=>{
@@ -939,22 +834,9 @@ document.getElementById("thisMonth").addEventListener("click", ()=>{
 });
 
 document.getElementById("resetSwaps").addEventListener("click", ()=>{ resetSwaps(); pick=null; render(); });
-
-document.getElementById("lockBaseline").addEventListener("click", ()=>{
-  lockBaselineJanToMar();
-  pick=null;
-  render();
-});
-
-document.getElementById("resetBaseline").addEventListener("click", ()=>{
-  resetBaseline();
-  pick=null;
-  render();
-});
-
-document.getElementById("exportForm").addEventListener("click", ()=>{
-  openFormPrint();
-});
+document.getElementById("lockBaseline").addEventListener("click", ()=>{ lockBaselineJanToMar(); pick=null; render(); });
+document.getElementById("resetBaseline").addEventListener("click", ()=>{ resetBaseline(); pick=null; render(); });
+document.getElementById("exportForm").addEventListener("click", ()=>{ openFormPrint(); });
 
 elStartMonth.addEventListener("change", ()=>{ pageOffset=0; pick=null; render(); });
 elMonthsShown.addEventListener("change", ()=>{ pageOffset=0; pick=null; render(); });
@@ -977,14 +859,12 @@ document.addEventListener("click", (e)=>{
     render();
     return;
   }
-
   if(pick.side === side){
     pick = { side, iso };
     render();
     return;
   }
 
-  // swap between pick and current click
   const isoMe = (pick.side==="me") ? pick.iso : iso;
   const isoTh = (pick.side==="them") ? pick.iso : iso;
 
@@ -993,9 +873,6 @@ document.addEventListener("click", (e)=>{
   render();
 });
 
-/* =========================================================
-   16) Init
-   ========================================================= */
 (function boot(){
   initSelectors();
   const now = new Date();
