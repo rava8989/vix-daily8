@@ -52,7 +52,7 @@
       background:var(--bg); border-bottom:2px solid var(--grid);
       padding:10px 12px;
     }
-    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .row{display:flex; gap:10px; align-items:end; flex-wrap:wrap;}
     .row .spacer{flex:1}
     .ctl{
       display:flex; flex-direction:column; gap:4px;
@@ -62,8 +62,9 @@
       font-size:14px; padding:8px 10px;
       border:2px solid var(--grid); border-radius:8px;
       background:#fff; color:var(--ink);
-      min-width:170px;
+      min-width:160px;
     }
+    .monthRow{display:flex; gap:8px;}
     button{
       font-size:14px;
       padding:10px 12px;
@@ -116,6 +117,7 @@
       overflow:hidden;
       box-shadow:var(--shadow);
       background:#fff;
+      margin-bottom:12px;
     }
 
     .monthHeader{
@@ -147,18 +149,15 @@
       background:#fff;
     }
     th.stickyLeft2, td.stickyLeft2{
-      position:sticky; left:220px; z-index:5;
+      position:sticky; left:240px; z-index:5;
       background:#fff;
     }
 
-    .colName{width:220px; min-width:220px; max-width:220px;}
-    .colSlot{width:70px; min-width:70px; max-width:70px;}
+    .colName{width:240px; min-width:240px; max-width:240px;}
+    .colSlot{width:80px; min-width:80px; max-width:80px;}
     .colDay{width:36px; min-width:36px; max-width:36px;}
 
-    thead th{
-      background:#fff;
-      font-weight:800;
-    }
+    thead th{background:#fff; font-weight:800;}
     thead .band{
       background:var(--hdr);
       color:#fff;
@@ -190,7 +189,6 @@
       line-height:28px;
     }
 
-    /* base fills */
     td.code[data-code="A"]{background:var(--a);}
     td.code[data-code="B"]{background:var(--b);}
     td.code[data-code="C"]{background:var(--c);}
@@ -206,16 +204,9 @@
       background:#fff; color:#b30000; font-weight:1000;
     }
 
-    /* weekend columns */
-    td.code.wknd{
-      background:var(--wknd) !important;
-      color:var(--wkndInk) !important;
-    }
-    td.code.wknd[data-code="HOL"]{
-      color:#ff9a9a !important;
-    }
+    td.code.wknd{background:var(--wknd) !important; color:var(--wkndInk) !important;}
+    td.code.wknd[data-code="HOL"]{color:#ff9a9a !important;}
 
-    /* interaction highlighting */
     td.code.pick{outline:3px solid #000; background:var(--pick) !important; color:#000 !important;}
     td.code.swapTarget{outline:3px solid #000; background:var(--swap) !important; color:#000 !important;}
     td.code.changed{box-shadow: inset 0 0 0 3px #b30000;}
@@ -238,6 +229,7 @@
       text-align:left;
       white-space:nowrap;
     }
+
     .groupDivider td{
       background:#fff;
       border-top:4px solid #000;
@@ -260,7 +252,6 @@
     .help .note{color:var(--muted)}
     .help .bad{color:var(--warn); font-weight:900;}
     .help .ok{color:var(--ok); font-weight:900;}
-    .footerPad{height:24px;}
   </style>
 </head>
 <body>
@@ -268,8 +259,12 @@
     <div class="row">
       <div class="ctl">
         <div>Start Month</div>
-        <input id="startMonth" type="month" />
+        <div class="monthRow">
+          <select id="startMonthSel"></select>
+          <select id="startYearSel"></select>
+        </div>
       </div>
+
       <div class="ctl">
         <div>Show Months</div>
         <select id="showMonths">
@@ -277,6 +272,7 @@
           <option value="4">4</option>
         </select>
       </div>
+
       <div class="ctl">
         <div>Mode</div>
         <select id="mode">
@@ -302,7 +298,7 @@
       </div>
 
       <button id="resetSwapsBtn">Reset Swaps</button>
-      <button class="primary" id="genFormBtn">Generate Form (PDF/JPG)</button>
+      <button class="primary" id="genFormBtn">Generate Form (Print)</button>
     </div>
 
     <div class="row" style="margin-top:10px">
@@ -331,1032 +327,466 @@
   <div class="wrap" id="monthsWrap"></div>
 
   <div class="wrap">
-    <div class="help" id="helpBox">
-      <b>Rules enforced (what you told me):</b><br/>
-      • Week is <b>Sun → Sat</b>; swaps cannot cross weeks.<br/>
-      • You cannot “move” coverage off weekends/holidays. <span class="bad">Someone must work A, C, weekend B, and HOL.</span> Those can only change by swapping with someone else who takes that day.<br/>
-      • Regular weekday <b>B</b> tours can move only <b>inside the same week</b>, and cannot be moved to Sat/Sun/HOL unless it’s a true swap (other person takes your original coverage).<br/>
-      • <b>Double</b> mode: swapping into A/B or B/C on the same week auto-creates an <b>MDO</b> in that same week (you pick the MDO day).<br/>
-      • HOL can be moved between <b>weekday B / RDO / MDO</b> (inside the week), but <b>not</b> onto an <b>R</b> day unless swapped.<br/>
-      <div class="note" style="margin-top:8px">
-        IMPORTANT: This tool needs the official 6-week slot templates. Right now, templates are provided as a baseline demo.
-        If any slot template is off, your on-screen schedule will be off.
-        You can replace the SLOT_TEMPLATES below with your exact 6-week loop (42 days) for slots 1–6.
-      </div>
+    <div class="help">
+      <b>How to use swap:</b>
+      1) Set <b>Mode = Swap</b>
+      2) Pick <b>ME</b> + <b>SWAP WITH</b>
+      3) Click a day cell on <b>ME row</b>, then click a day cell on <b>THEM row</b><br/><br/>
+      <b>Note:</b> If you still see code printed on screen, you are not serving this as <b>index.html</b>.
     </div>
   </div>
 
-  <div class="footerPad"></div>
-
 <script>
-/**
- * =========================
- * 1) DATA YOU MUST VERIFY
- * =========================
- * Replace SLOT_TEMPLATES with the *exact* 42-day loop per slot (1–6).
- * Each slot template is an array of 42 codes: A/B/C/RDO/MDO/R.
- * HOL is applied separately by HOLIDAYS (and your “HOL moves” logic).
- *
- * Right now these are reasonable demo loops (NOT guaranteed to match your paper).
- */
-const SLOT_TEMPLATES = {
-  1: [
-    // Week1..Week6 (Sun..Sat) = 42 days
-    "RDO","B","B","B","B","B","RDO",
-    "RDO","B","B","B","B","B","RDO",
-    "RDO","C","C","C","C","C","RDO",
-    "RDO","A","A","A","A","A","RDO",
-    "RDO","B","B","B","B","B","RDO",
-    "RDO","R","R","R","R","R","RDO",
-  ],
-  2: [
-    "B","B","B","B","B","RDO","RDO",
-    "C","C","C","C","C","RDO","RDO",
-    "A","A","A","A","A","RDO","RDO",
-    "B","B","B","B","B","RDO","RDO",
-    "R","R","R","R","R","RDO","RDO",
-    "B","B","B","B","B","RDO","RDO",
-  ],
-  3: [
-    "RDO","B","B","B","B","RDO","RDO",
-    "RDO","R","R","R","R","RDO","RDO",
-    "RDO","C","C","C","C","RDO","RDO",
-    "RDO","A","A","A","A","RDO","RDO",
-    "RDO","B","B","B","B","RDO","RDO",
-    "RDO","C","C","C","C","RDO","RDO",
-  ],
-  4: [
-    "RDO","R","R","R","R","RDO","RDO",
-    "RDO","C","C","C","C","RDO","RDO",
-    "RDO","B","B","B","B","RDO","RDO",
-    "RDO","A","A","A","A","RDO","RDO",
-    "RDO","R","R","R","R","RDO","RDO",
-    "RDO","B","B","B","B","RDO","RDO",
-  ],
-  5: [
-    "RDO","C","C","C","C","C","RDO",
-    "RDO","B","B","B","B","B","RDO",
-    "RDO","A","A","A","A","A","RDO",
-    "RDO","R","R","R","R","RDO","RDO",
-    "RDO","C","C","C","C","C","RDO",
-    "RDO","B","B","B","B","B","RDO",
-  ],
-  6: [
-    "C","C","C","C","C","RDO","RDO",
-    "B","B","B","B","B","RDO","RDO",
-    "A","A","A","A","A","RDO","RDO",
-    "R","R","R","R","R","RDO","RDO",
-    "C","C","C","C","C","RDO","RDO",
-    "B","B","B","B","B","RDO","RDO",
-  ],
-};
+  const SLOT_TEMPLATES = {
+    1: ["RDO","B","B","B","B","B","RDO","RDO","B","B","B","B","B","RDO","RDO","C","C","C","C","C","RDO","RDO","A","A","A","A","A","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO"],
+    2: ["B","B","B","B","B","RDO","RDO","C","C","C","C","C","RDO","RDO","A","A","A","A","A","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","B","B","B","B","B","RDO","RDO"],
+    3: ["RDO","B","B","B","B","RDO","RDO","RDO","R","R","R","R","RDO","RDO","RDO","C","C","C","C","RDO","RDO","RDO","A","A","A","A","RDO","RDO","RDO","B","B","B","B","RDO","RDO","RDO","C","C","C","C","RDO","RDO"],
+    4: ["RDO","R","R","R","R","RDO","RDO","RDO","C","C","C","C","RDO","RDO","RDO","B","B","B","B","RDO","RDO","RDO","A","A","A","A","RDO","RDO","RDO","R","R","R","R","RDO","RDO","RDO","B","B","B","B","RDO","RDO"],
+    5: ["RDO","C","C","C","C","C","RDO","RDO","B","B","B","B","B","RDO","RDO","A","A","A","A","A","RDO","RDO","R","R","R","R","RDO","RDO","RDO","C","C","C","C","C","RDO","RDO","B","B","B","B","B","RDO"],
+    6: ["C","C","C","C","C","RDO","RDO","B","B","B","B","B","RDO","RDO","A","A","A","A","A","RDO","RDO","R","R","R","R","R","RDO","RDO","C","C","C","C","C","RDO","RDO","B","B","B","B","B","RDO","RDO"],
+  };
 
-/**
- * Anchor date for template day 0 (must be a Sunday).
- * Change this to match your official loop anchor.
- */
-const TEMPLATE_ANCHOR_ISO = "2026-02-01"; // Sunday
+  const TEMPLATE_ANCHOR_ISO = "2026-02-01"; // must be a Sunday
 
-/**
- * Holidays (ISO yyyy-mm-dd). Add more as needed.
- * HOL display uses your code HOL (red text).
- */
-const HOLIDAYS = new Set([
-  "2026-01-01",
-  "2026-01-19",
-  "2026-02-16",
-]);
+  const HOLIDAYS = new Set(["2026-01-01","2026-01-19","2026-02-16"]);
 
-/**
- * Employees (rotating shift only). Fill with your exact roster.
- * NOTE: You told me ignore top/bottom sections. So only rotating shift names go here.
- */
-const EMPLOYEES = [
-  { name:"Kingston, Joseph C.", slot:1 },
-  { name:"Rodriguez, Roger", slot:1 },
-  { name:"Joseph, George R", slot:2 },
-  { name:"Ramnarine, Ashram", slot:2 },
-  { name:"Segovia, Eduardo M", slot:3 },
-  { name:"Victoria, Robert", slot:3 },
-  { name:"Bouaziz, Abdelghani", slot:4 },
-  { name:"Gragossian, Alani", slot:4 },
-  { name:"Handel, Joseph", slot:5 },
-  { name:"Rakhmanov, Ravshan", slot:5 },
-  { name:"Rodriguez, Alexander", slot:6 },
-  { name:"Svenjak, Mark", slot:6 },
-];
+  const EMPLOYEES = [
+    { name:"Kingston, Joseph C.", slot:1 },
+    { name:"Rodriguez, Roger", slot:1 },
+    { name:"Joseph, George R", slot:2 },
+    { name:"Ramnarine, Ashram", slot:2 },
+    { name:"Segovia, Eduardo M", slot:3 },
+    { name:"Victoria, Robert", slot:3 },
+    { name:"Bouaziz, Abdelghani", slot:4 },
+    { name:"Gragossian, Alani", slot:4 },
+    { name:"Handel, Joseph", slot:5 },
+    { name:"Rakhmanov, Ravshan", slot:5 },
+    { name:"Rodriguez, Alexander", slot:6 },
+    { name:"Svenjak, Mark", slot:6 },
+  ];
 
-/**
- * =========================
- * 2) APP STATE
- * =========================
- */
-const LS_KEY = "rotShiftSwapTool_v1";
-const state = loadState() || {
-  startMonthISO: isoMonth(new Date()),
-  showMonths: 3,
-  mode: "view",
-  me: EMPLOYEES[0]?.name || "",
-  them: EMPLOYEES[1]?.name || "",
-  baselineLocked: false,
-  // swaps: { [personName]: { [isoDate]: codeOverride } }
-  overrides: {},
-  // changedPairs: list of {me,them, isoA, isoB, type:'swap'|'double', meta}
-  changeLog: [],
-  // doubleMDOChoice: { [key]: isoDate } where key is `${me}|${them}|${weekStartISO}`
-  doubleMDOChoice: {},
-};
+  const LS_KEY = "rotShiftSwapTool_v2";
+  function loadState(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"null"); }catch(e){ return null; } }
+  function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 
-let pick = null; // { side:'me'|'them', personName, iso, el }
-
-/**
- * =========================
- * 3) UTIL
- * =========================
- */
-function pad2(n){ return String(n).padStart(2,"0"); }
-function isoDate(d){
-  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-}
-function isoMonth(d){
-  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
-}
-function parseISODate(iso){
-  const [y,m,dd] = iso.split("-").map(Number);
-  return new Date(y, m-1, dd);
-}
-function parseISOMonth(iso){
-  const [y,m] = iso.split("-").map(Number);
-  return new Date(y, m-1, 1);
-}
-function addMonths(date, n){
-  const d = new Date(date.getFullYear(), date.getMonth()+n, 1);
-  return d;
-}
-function daysInMonth(y,m0){
-  return new Date(y, m0+1, 0).getDate();
-}
-function dowShort(d){
-  return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
-}
-function isWeekend(d){ return d.getDay()===0 || d.getDay()===6; } // Sun or Sat
-function weekStartSundayISO(iso){
-  const d = parseISODate(iso);
-  const day = d.getDay(); // 0=Sun
-  const ws = new Date(d.getFullYear(), d.getMonth(), d.getDate()-day);
-  return isoDate(ws);
-}
-function sameWeek(isoA, isoB){
-  return weekStartSundayISO(isoA) === weekStartSundayISO(isoB);
-}
-function withinDisplayedRange(iso){
-  const start = parseISOMonth(state.startMonthISO);
-  const end = addMonths(start, Number(state.showMonths));
-  const d = parseISODate(iso);
-  return d >= start && d < end;
-}
-function saveState(){
-  localStorage.setItem(LS_KEY, JSON.stringify(state));
-}
-function loadState(){
-  try{
-    const raw = localStorage.getItem(LS_KEY);
-    if(!raw) return null;
-    return JSON.parse(raw);
-  }catch(e){ return null; }
-}
-function setPill(el, text, kind=null){
-  el.textContent = text;
-  el.classList.remove("ok","bad");
-  if(kind==="ok") el.classList.add("ok");
-  if(kind==="bad") el.classList.add("bad");
-}
-function getEmp(name){
-  return EMPLOYEES.find(e=>e.name===name) || null;
-}
-function getTemplateIndex(iso){
-  // compute day index from TEMPLATE_ANCHOR_ISO (must be Sunday) modulo 42
-  const a = parseISODate(TEMPLATE_ANCHOR_ISO);
-  const d = parseISODate(iso);
-  const ms = 24*60*60*1000;
-  const diffDays = Math.floor((d - a)/ms);
-  // allow negative
-  const mod = ((diffDays % 42) + 42) % 42;
-  return mod;
-}
-function baseCode(personName, iso){
-  const emp = getEmp(personName);
-  if(!emp) return "";
-  const t = SLOT_TEMPLATES[emp.slot];
-  if(!t) return "";
-  const idx = getTemplateIndex(iso);
-  return t[idx] || "";
-}
-function getOverride(personName, iso){
-  return state.overrides?.[personName]?.[iso] ?? null;
-}
-function setOverride(personName, iso, code){
-  if(!state.overrides[personName]) state.overrides[personName] = {};
-  state.overrides[personName][iso] = code;
-}
-function delOverride(personName, iso){
-  if(state.overrides?.[personName]) delete state.overrides[personName][iso];
-}
-
-/**
- * Holiday rendering rule (display HOL when date is in HOLIDAYS),
- * unless person has an explicit time-off modifier (COMP/PE/SICK/IOD/DIF),
- * or an explicit override moved HOL elsewhere.
- *
- * NOTE: Your full “HOL moves to next weekday B” logic is complex; this version:
- * - Displays HOL on the actual date if that person is working that day (A/B/C/R)
- * - If the base/override is RDO/MDO on the HOL date, it flags HOL as “movable” and lets you move it
- *   inside the same week onto a weekday B/RDO/MDO (not onto R unless swapped).
- */
-function displayCode(personName, iso){
-  const ov = getOverride(personName, iso);
-  const code = ov ?? baseCode(personName, iso);
-
-  // time-off modifiers override everything visually
-  if(["COMP","PE","SICK","IOD","DIF"].includes(code)) return code;
-
-  const isHol = HOLIDAYS.has(iso);
-  if(isHol){
-    // Show HOL overlay by default (you can swap HOL away by overriding to something else + placing HOL elsewhere)
-    return "HOL";
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function isoDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+  function isoMonth(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`; }
+  function parseISODate(iso){ const [y,m,dd]=iso.split("-").map(Number); return new Date(y,m-1,dd); }
+  function parseISOMonth(iso){ const [y,m]=iso.split("-").map(Number); return new Date(y,m-1,1); }
+  function addMonths(date,n){ return new Date(date.getFullYear(), date.getMonth()+n, 1); }
+  function daysInMonth(y,m0){ return new Date(y,m0+1,0).getDate(); }
+  function dowShort(d){ return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()]; }
+  function isWeekend(d){ return d.getDay()===0 || d.getDay()===6; }
+  function weekStartSundayISO(iso){
+    const d=parseISODate(iso);
+    const ws=new Date(d.getFullYear(), d.getMonth(), d.getDate()-d.getDay());
+    return isoDate(ws);
   }
-  return code;
-}
+  function sameWeek(a,b){ return weekStartSundayISO(a)===weekStartSundayISO(b); }
+  function getEmp(name){ return EMPLOYEES.find(e=>e.name===name)||null; }
 
-/**
- * Coverage/validation helpers
- */
-function isCoverageCode(code){
-  return ["A","B","C","R"].includes(code);
-}
-function isOffCode(code){
-  return ["RDO","MDO","COMP","PE","SICK","IOD","DIF","HOL"].includes(code);
-}
-function isWeekdayBMovableTarget(d){
-  // weekday Mon-Fri
-  const day = d.getDay();
-  return day>=1 && day<=5;
-}
-
-/**
- * =========================
- * 4) SWAP RULES (ENFORCED)
- * =========================
- */
-function validateSwap(meName, themName, isoA, isoB){
-  const errors = [];
-
-  if(!meName || !themName) errors.push("Pick both ME and SWAP WITH.");
-  if(meName === themName) errors.push("ME and SWAP WITH must be different.");
-  if(!isoA || !isoB) errors.push("Pick two dates to swap.");
-
-  if(errors.length) return {ok:false, errors};
-
-  // must be within same week
-  if(!sameWeek(isoA, isoB)) errors.push("Cannot cross weeks. Swaps must stay inside Sun–Sat.");
-
-  const dA = parseISODate(isoA);
-  const dB = parseISODate(isoB);
-
-  const meCodeA = displayCode(meName, isoA);
-  const themCodeB = displayCode(themName, isoB);
-
-  // Coverage rule: weekend/holiday coverage cannot disappear.
-  // We enforce by only allowing swaps (exchange). No “move” allowed here.
-  // Additional rule: regular weekday B cannot be moved to weekend/holiday unless swapped (it is swapped, so OK).
-  // But we also prevent creating an impossible open shift: if one side is OFF on weekend and other is COVERAGE weekday B,
-  // swapping would make weekend OFF for the coverage person AND weekend coverage disappears. So disallow if weekend/holiday coverage would become OFF for both.
-  // Since it’s a swap, the other person would take that day; so coverage exists. The real issue is if you try to swap a weekend coverage day with a weekday off day
-  // and end up with someone OFF on weekend that was previously covered by both being OFF (not possible in a swap). That only happens if both codes are OFF.
-  const swapA_meGets = themCodeB;
-  const swapB_themGets = meCodeA;
-
-  // Disallow placing RDO/MDO/HOL/COMP/PE/etc into a weekend day unless the other person is taking that weekend coverage day.
-  // Because it IS a swap, that weekend day is taken by the other person. The only case we block is swapping OFF<->OFF on a weekend/holiday,
-  // which would leave nobody covering.
-  if((isWeekend(dA) || HOLIDAYS.has(isoA)) && isOffCode(meCodeA) && isOffCode(swapB_themGets)){
-    errors.push("Invalid: would leave weekend/holiday uncovered (off ↔ off).");
-  }
-  if((isWeekend(dB) || HOLIDAYS.has(isoB)) && isOffCode(themCodeB) && isOffCode(swapA_meGets)){
-    errors.push("Invalid: would leave weekend/holiday uncovered (off ↔ off).");
+  function getTemplateIndex(iso){
+    const a=parseISODate(TEMPLATE_ANCHOR_ISO);
+    const d=parseISODate(iso);
+    const ms=24*60*60*1000;
+    const diff=Math.floor((d-a)/ms);
+    return ((diff%42)+42)%42;
   }
 
-  // “R day cannot receive moved HOL unless swapped” — we are swapping, so OK.
-  // But if someone is trying to place HOL onto an R day without true swap context, we handle in HOL move tool (not implemented here).
+  const state = loadState() || {
+    startMonthISO: isoMonth(new Date()),
+    showMonths: 3,
+    mode: "view",
+    me: EMPLOYEES[0]?.name || "",
+    them: EMPLOYEES[1]?.name || "",
+    baselineLocked: false,
+    overrides: {},
+    changeLog: [],
+    doubleMDOChoice: {},
+  };
 
-  // Ensure weekday B doesn't land on Sat/Sun/HOL unless it is a swap with the other taking your original coverage.
-  // Since swap is symmetric, this is fine; we only block if you are effectively "moving" (not swap). Here always swap.
+  let pick=null;
 
-  return {ok: errors.length===0, errors};
-}
-
-function doSwap(meName, themName, isoMe, isoThem){
-  const v = validateSwap(meName, themName, isoMe, isoThem);
-  if(!v.ok) return v;
-
-  // swap displayed codes (not base) but preserve time-off modifiers as codes.
-  const a = displayCode(meName, isoMe);
-  const b = displayCode(themName, isoThem);
-
-  // If HOL is displayed, swapping HOL directly is allowed (it means they swap the holiday obligation/credit on that date).
-  // Set overrides to lock the swapped result.
-  setOverride(meName, isoMe, b);
-  setOverride(themName, isoThem, a);
-
-  state.changeLog.push({
-    type:"swap",
-    me: meName,
-    them: themName,
-    isoA: isoMe,
-    isoB: isoThem,
-    at: Date.now()
-  });
-
-  saveState();
-  return {ok:true, errors:[]};
-}
-
-/**
- * =========================
- * 5) DOUBLE MODE
- * =========================
- * Double = within same week, you swap into a second coverage shift (A/B or B/C) and must add an MDO in that week.
- * Implementation here:
- * - You pick one day on ME and one day on THEM to swap (same as swap)
- * - After swap, if ME now has both A and B in the same week (or B and C), you must choose an MDO day in that same week
- *   that is a weekday B/RDO/MDO (NOT Sat/Sun/HOL), and it will be set to MDO.
- *
- * This is a simplified enforcement consistent with your rule: “double automatically requires an MDO for each double”.
- */
-function weekRangeFromStart(wsISO){
-  const ws = parseISODate(wsISO);
-  const out=[];
-  for(let i=0;i<7;i++){
-    const d = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate()+i);
-    out.push(isoDate(d));
+  function baseCode(person, iso){
+    const emp=getEmp(person);
+    if(!emp) return "";
+    const arr=SLOT_TEMPLATES[emp.slot];
+    if(!arr) return "";
+    return arr[getTemplateIndex(iso)] || "";
   }
-  return out;
-}
-function codesInWeek(personName, wsISO){
-  const isos = weekRangeFromStart(wsISO);
-  return isos.map(iso => displayCode(personName, iso));
-}
-function hasDoubleABorBC(codes){
-  // if week contains both A and B coverage, or both B and C coverage
-  const hasA = codes.includes("A");
-  const hasB = codes.includes("B");
-  const hasC = codes.includes("C");
-  const hasAB = hasA && hasB;
-  const hasBC = hasB && hasC;
-  return {hasAB, hasBC, any: hasAB || hasBC};
-}
-function validateMDOChoice(personName, wsISO, isoChoice){
-  const errs=[];
-  if(!sameWeek(wsISO, isoChoice)) errs.push("MDO must be inside the same week.");
-  const d = parseISODate(isoChoice);
-  if(isWeekend(d)) errs.push("MDO cannot be placed on Sat/Sun.");
-  if(HOLIDAYS.has(isoChoice)) errs.push("MDO cannot be placed on HOL day.");
-  // Cannot place MDO onto R day unless swapped (this is a move). We disallow.
-  const cur = displayCode(personName, isoChoice);
-  if(cur==="R") errs.push("Cannot move to R day (Reserve) unless swapped.");
-  // Must stay on weekday B/RDO/MDO
-  if(!["B","RDO","MDO"].includes(cur)) errs.push("MDO choice must be on a weekday B / RDO / MDO cell.");
-  return {ok:errs.length===0, errors:errs};
-}
-function applyDoubleMDOIfNeeded(meName, themName, weekStartISO){
-  const weekCodes = codesInWeek(meName, weekStartISO);
-  const dbl = hasDoubleABorBC(weekCodes);
-  if(!dbl.any) return {needed:false, applied:false, errors:[]};
-
-  const key = `${meName}|${themName}|${weekStartISO}`;
-  const chosen = state.doubleMDOChoice[key] || null;
-  if(!chosen) return {needed:true, applied:false, errors:["Double detected. Pick an MDO day (weekday B/RDO/MDO) inside that week."]};
-
-  const v = validateMDOChoice(meName, weekStartISO, chosen);
-  if(!v.ok) return {needed:true, applied:false, errors:v.errors};
-
-  setOverride(meName, chosen, "MDO");
-  state.changeLog.push({
-    type:"double",
-    me: meName,
-    them: themName,
-    weekStartISO,
-    mdo: chosen,
-    at: Date.now()
-  });
-  saveState();
-  return {needed:true, applied:true, errors:[]};
-}
-
-/**
- * =========================
- * 6) RENDER
- * =========================
- */
-const monthsWrap = document.getElementById("monthsWrap");
-const startMonthInput = document.getElementById("startMonth");
-const showMonthsSel = document.getElementById("showMonths");
-const modeSel = document.getElementById("mode");
-const meSel = document.getElementById("meSel");
-const themSel = document.getElementById("themSel");
-
-const statusMode = document.getElementById("statusMode");
-const statusPick = document.getElementById("statusPick");
-const statusValidation = document.getElementById("statusValidation");
-
-function buildSelectOptions(sel, value){
-  sel.innerHTML = "";
-  for(const e of EMPLOYEES){
-    const o = document.createElement("option");
-    o.value = e.name;
-    o.textContent = e.name;
-    sel.appendChild(o);
-  }
-  sel.value = value || "";
-}
-
-function monthTitle(d){
-  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  return `${months[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-function render(){
-  // controls
-  startMonthInput.value = state.startMonthISO;
-  showMonthsSel.value = String(state.showMonths);
-  modeSel.value = state.mode;
-
-  buildSelectOptions(meSel, state.me);
-  buildSelectOptions(themSel, state.them);
-
-  setPill(statusMode, `MODE: ${state.mode.toUpperCase()}`, null);
-
-  if(!pick) setPill(statusPick, "PICK: —", null);
-  else setPill(statusPick, `PICK: ${pick.side.toUpperCase()} ${pick.personName} @ ${pick.iso}`, null);
-
-  monthsWrap.innerHTML = "";
-
-  const start = parseISOMonth(state.startMonthISO);
-  const monthsCount = Number(state.showMonths);
-
-  for(let mi=0; mi<monthsCount; mi++){
-    const mDate = addMonths(start, mi);
-    monthsWrap.appendChild(renderMonthPanel(mDate));
+  function getOverride(person, iso){ return state.overrides?.[person]?.[iso] ?? null; }
+  function setOverride(person, iso, code){
+    if(!state.overrides[person]) state.overrides[person]={};
+    state.overrides[person][iso]=code;
   }
 
-  // validation summary
-  const v = currentValidationSummary();
-  if(v.ok){
-    setPill(statusValidation, "VALIDATION: OK", "ok");
-  }else{
-    setPill(statusValidation, `VALIDATION: ${v.errors[0]}`, "bad");
-  }
-}
-
-function renderMonthPanel(monthDate){
-  const y = monthDate.getFullYear();
-  const m0 = monthDate.getMonth();
-  const dim = daysInMonth(y,m0);
-
-  const panel = document.createElement("div");
-  panel.className = "panel";
-  panel.style.marginBottom = "12px";
-
-  const hdr = document.createElement("div");
-  hdr.className = "monthHeader";
-  hdr.innerHTML = `<div>${monthTitle(monthDate)}</div><small>Rotating Shift</small>`;
-  panel.appendChild(hdr);
-
-  const scroll = document.createElement("div");
-  scroll.className = "scrollX";
-  panel.appendChild(scroll);
-
-  const table = document.createElement("table");
-  scroll.appendChild(table);
-
-  const thead = document.createElement("thead");
-  table.appendChild(thead);
-
-  // header row 1: band + days 1..dim
-  const r1 = document.createElement("tr");
-  thead.appendChild(r1);
-
-  const thName = document.createElement("th");
-  thName.className = "stickyLeft colName band";
-  thName.textContent = "NAME";
-  r1.appendChild(thName);
-
-  const thSlot = document.createElement("th");
-  thSlot.className = "stickyLeft2 colSlot band";
-  thSlot.textContent = "SLOT";
-  r1.appendChild(thSlot);
-
-  for(let d=1; d<=dim; d++){
-    const th = document.createElement("th");
-    th.className = "colDay dayTop";
-    th.textContent = String(d);
-    r1.appendChild(th);
+  function displayCode(person, iso){
+    const ov=getOverride(person, iso);
+    const code=ov ?? baseCode(person, iso);
+    if(["COMP","PE","SICK","IOD","DIF"].includes(code)) return code;
+    if(HOLIDAYS.has(iso)) return "HOL";
+    return code;
   }
 
-  // header row 2: dow
-  const r2 = document.createElement("tr");
-  thead.appendChild(r2);
+  function isOff(code){ return ["RDO","MDO","COMP","PE","SICK","IOD","DIF","HOL"].includes(code); }
 
-  const thN2 = document.createElement("th");
-  thN2.className = "stickyLeft colName";
-  thN2.textContent = "";
-  r2.appendChild(thN2);
+  function validateSwap(me, them, isoMe, isoThem){
+    const errors=[];
+    if(!me||!them) errors.push("Pick ME and SWAP WITH.");
+    if(me===them) errors.push("ME and SWAP WITH must be different.");
+    if(!sameWeek(isoMe, isoThem)) errors.push("Cannot cross weeks (Sun–Sat).");
+    if(errors.length) return {ok:false, errors};
 
-  const thS2 = document.createElement("th");
-  thS2.className = "stickyLeft2 colSlot";
-  thS2.textContent = "";
-  r2.appendChild(thS2);
+    const dMe=parseISODate(isoMe);
+    const dThem=parseISODate(isoThem);
 
-  for(let d=1; d<=dim; d++){
-    const date = new Date(y, m0, d);
-    const th = document.createElement("th");
-    th.className = "colDay dow";
-    th.textContent = dowShort(date);
-    r2.appendChild(th);
+    const meCode=displayCode(me, isoMe);
+    const themCode=displayCode(them, isoThem);
+
+    // Block OFF<->OFF swap on weekend/holiday (would leave coverage nonsense)
+    if((isWeekend(dMe)||HOLIDAYS.has(isoMe)) && isOff(meCode) && isOff(themCode)) errors.push("Invalid: off ↔ off on weekend/holiday.");
+    if((isWeekend(dThem)||HOLIDAYS.has(isoThem)) && isOff(meCode) && isOff(themCode)) errors.push("Invalid: off ↔ off on weekend/holiday.");
+
+    return {ok: errors.length===0, errors};
   }
 
-  // body
-  const tbody = document.createElement("tbody");
-  table.appendChild(tbody);
-
-  // group by slots (1..6)
-  const bySlot = {};
-  for(const e of EMPLOYEES){
-    if(!bySlot[e.slot]) bySlot[e.slot]=[];
-    bySlot[e.slot].push(e);
+  function doSwap(me, them, isoMe, isoThem){
+    const v=validateSwap(me, them, isoMe, isoThem);
+    if(!v.ok) return v;
+    const a=displayCode(me, isoMe);
+    const b=displayCode(them, isoThem);
+    setOverride(me, isoMe, b);
+    setOverride(them, isoThem, a);
+    saveState();
+    return {ok:true, errors:[]};
   }
-  const slotsSorted = Object.keys(bySlot).map(Number).sort((a,b)=>a-b);
 
-  let firstSlot=true;
-  for(const slot of slotsSorted){
-    if(!firstSlot){
-      const div = document.createElement("tr");
-      div.className = "groupDivider";
-      const td = document.createElement("td");
-      td.colSpan = 2 + dim;
+  const monthsWrap=document.getElementById("monthsWrap");
+  const showMonthsSel=document.getElementById("showMonths");
+  const modeSel=document.getElementById("mode");
+  const meSel=document.getElementById("meSel");
+  const themSel=document.getElementById("themSel");
+  const statusMode=document.getElementById("statusMode");
+  const statusPick=document.getElementById("statusPick");
+  const statusValidation=document.getElementById("statusValidation");
+
+  function setPill(el, text, kind){
+    el.textContent=text;
+    el.classList.remove("ok","bad");
+    if(kind==="ok") el.classList.add("ok");
+    if(kind==="bad") el.classList.add("bad");
+  }
+
+  function buildSelectOptions(sel, value){
+    sel.innerHTML="";
+    for(const e of EMPLOYEES){
+      const o=document.createElement("option");
+      o.value=e.name;
+      o.textContent=e.name;
+      sel.appendChild(o);
+    }
+    sel.value=value;
+  }
+
+  function monthTitle(d){
+    const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+    return `${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  function render(){
+    showMonthsSel.value=String(state.showMonths);
+    modeSel.value=state.mode;
+    buildSelectOptions(meSel, state.me);
+    buildSelectOptions(themSel, state.them);
+
+    setPill(statusMode, `MODE: ${state.mode.toUpperCase()}`);
+    setPill(statusPick, pick?`PICK: ${pick.person} @ ${pick.iso}`:"PICK: —");
+
+    monthsWrap.innerHTML="";
+    const start=parseISOMonth(state.startMonthISO);
+    for(let i=0;i<Number(state.showMonths);i++){
+      monthsWrap.appendChild(renderMonthPanel(addMonths(start,i)));
+    }
+  }
+
+  function renderMonthPanel(monthDate){
+    const y=monthDate.getFullYear();
+    const m0=monthDate.getMonth();
+    const dim=daysInMonth(y,m0);
+
+    const panel=document.createElement("div");
+    panel.className="panel";
+
+    const hdr=document.createElement("div");
+    hdr.className="monthHeader";
+    hdr.innerHTML=`<div>${monthTitle(monthDate)}</div><small>Rotating Shift</small>`;
+    panel.appendChild(hdr);
+
+    const scroll=document.createElement("div");
+    scroll.className="scrollX";
+    panel.appendChild(scroll);
+
+    const table=document.createElement("table");
+    scroll.appendChild(table);
+
+    const thead=document.createElement("thead");
+    table.appendChild(thead);
+
+    const r1=document.createElement("tr");
+    thead.appendChild(r1);
+
+    const thName=document.createElement("th");
+    thName.className="stickyLeft colName band";
+    thName.textContent="NAME";
+    r1.appendChild(thName);
+
+    const thSlot=document.createElement("th");
+    thSlot.className="stickyLeft2 colSlot band";
+    thSlot.textContent="SLOT";
+    r1.appendChild(thSlot);
+
+    for(let d=1; d<=dim; d++){
+      const th=document.createElement("th");
+      th.className="colDay dayTop";
+      th.textContent=String(d);
+      r1.appendChild(th);
+    }
+
+    const r2=document.createElement("tr");
+    thead.appendChild(r2);
+
+    const thN2=document.createElement("th");
+    thN2.className="stickyLeft colName";
+    r2.appendChild(thN2);
+
+    const thS2=document.createElement("th");
+    thS2.className="stickyLeft2 colSlot";
+    r2.appendChild(thS2);
+
+    for(let d=1; d<=dim; d++){
+      const date=new Date(y,m0,d);
+      const th=document.createElement("th");
+      th.className="colDay dow";
+      th.textContent=dowShort(date);
+      r2.appendChild(th);
+    }
+
+    const tbody=document.createElement("tbody");
+    table.appendChild(tbody);
+
+    // Render ME + THEM as a 2-row block at top (same columns)
+    if(state.me && state.them && state.me!==state.them){
+      tbody.appendChild(renderPersonRow(monthDate, state.me, dim));
+      tbody.appendChild(renderPersonRow(monthDate, state.them, dim));
+      const div=document.createElement("tr");
+      div.className="groupDivider";
+      const td=document.createElement("td");
+      td.colSpan=2+dim;
       div.appendChild(td);
       tbody.appendChild(div);
     }
-    firstSlot=false;
 
-    const people = bySlot[slot].slice().sort((a,b)=>a.name.localeCompare(b.name));
-    for(const person of people){
-      // ME row (top within pair)
-      tbody.appendChild(renderPersonRow(monthDate, person.name, person.slot, "meLike", dim));
-
-      // if selected ME or THEM, show comparison row directly under (as requested):
-      // When you pick ME + THEM, we show ME row then THEM row immediately below for easier same-column swap.
-      // We do this by rendering only those two persons as a two-row block at top if both selected.
-      // But user asked “second person on bottom” in same columns. We’ll do it as follows:
-      // - If this person is ME, render THEM right beneath it.
-      // - Otherwise keep normal roster.
-      if(person.name === state.me){
-        const themEmp = getEmp(state.them);
-        if(themEmp){
-          tbody.appendChild(renderPersonRow(monthDate, themEmp.name, themEmp.slot, "themLike", dim, {isCompare:true}));
-          // divider after pair
-          const div2 = document.createElement("tr");
-          div2.className = "groupDivider";
-          const td2 = document.createElement("td");
-          td2.colSpan = 2 + dim;
-          div2.appendChild(td2);
-          tbody.appendChild(div2);
-        }
-      }
-    }
-  }
-
-  return panel;
-}
-
-function renderPersonRow(monthDate, personName, slot, sideTag, dim, opts={}){
-  const y = monthDate.getFullYear();
-  const m0 = monthDate.getMonth();
-
-  const tr = document.createElement("tr");
-  tr.className = "personRow";
-
-  const tdName = document.createElement("td");
-  tdName.className = "stickyLeft colName nameCell";
-  tdName.textContent = personName;
-  tr.appendChild(tdName);
-
-  const tdSlot = document.createElement("td");
-  tdSlot.className = "stickyLeft2 colSlot slotCell";
-  tdSlot.textContent = `Slot ${slot}`;
-  tr.appendChild(tdSlot);
-
-  for(let d=1; d<=dim; d++){
-    const date = new Date(y, m0, d);
-    const iso = isoDate(date);
-    const code = displayCode(personName, iso);
-
-    const td = document.createElement("td");
-    td.className = "colDay code";
-    td.dataset.person = personName;
-    td.dataset.iso = iso;
-    td.dataset.code = code;
-
-    // weekend coloring
-    const wknd = (date.getDay()===0 || date.getDay()===6);
-    if(wknd) td.classList.add("wknd");
-
-    td.textContent = code;
-
-    // mark changed if override exists
-    if(getOverride(personName, iso) !== null) td.classList.add("changed");
-
-    // pick highlight
-    if(pick && pick.personName===personName && pick.iso===iso){
-      td.classList.add("pick");
+    // Then render everyone
+    for(const emp of EMPLOYEES){
+      tbody.appendChild(renderPersonRow(monthDate, emp.name, dim));
     }
 
-    td.addEventListener("click", ()=> onCellClick(td));
-
-    tr.appendChild(td);
+    return panel;
   }
 
-  return tr;
-}
+  function renderPersonRow(monthDate, person, dim){
+    const y=monthDate.getFullYear();
+    const m0=monthDate.getMonth();
+    const emp=getEmp(person);
 
-/**
- * =========================
- * 7) INTERACTION
- * =========================
- */
-function clearPick(){
-  pick = null;
-  render();
-}
+    const tr=document.createElement("tr");
+    tr.className="personRow";
 
-function onCellClick(td){
-  const mode = state.mode;
-  if(mode==="view") return;
+    const tdName=document.createElement("td");
+    tdName.className="stickyLeft colName nameCell";
+    tdName.textContent=person;
+    tr.appendChild(tdName);
 
-  const meName = state.me;
-  const themName = state.them;
-  const person = td.dataset.person;
-  const iso = td.dataset.iso;
+    const tdSlot=document.createElement("td");
+    tdSlot.className="stickyLeft2 colSlot slotCell";
+    tdSlot.textContent=emp?`Slot ${emp.slot}`:"";
+    tr.appendChild(tdSlot);
 
-  if(!meName || !themName) return;
+    for(let d=1; d<=dim; d++){
+      const date=new Date(y,m0,d);
+      const iso=isoDate(date);
+      const code=displayCode(person, iso);
 
-  // In swap/double, allow selecting only from ME row or THEM row for clarity
-  if(person !== meName && person !== themName){
-    setPill(statusValidation, "VALIDATION: click ME or SWAP WITH rows only", "bad");
-    return;
-  }
+      const td=document.createElement("td");
+      td.className="colDay code";
+      if(isWeekend(date)) td.classList.add("wknd");
+      td.dataset.person=person;
+      td.dataset.iso=iso;
+      td.dataset.code=code;
+      td.textContent=code;
 
-  // Set pick
-  if(!pick){
-    pick = { side: (person===meName ? "me" : "them"), personName: person, iso: iso };
-    render();
-    return;
-  }
+      if(getOverride(person, iso)!==null) td.classList.add("changed");
+      if(pick && pick.person===person && pick.iso===iso) td.classList.add("pick");
 
-  // second click
-  const pick2 = { side: (person===meName ? "me" : "them"), personName: person, iso: iso };
-
-  // must be on opposite person for swap/double
-  if(pick.personName === pick2.personName){
-    // In double mode, allow picking MDO day after swap if needed:
-    if(state.mode==="double"){
-      // If a double was detected, user can click a day to set MDO
-      const wsISO = weekStartSundayISO(pick2.iso);
-      const dbl = hasDoubleABorBC(codesInWeek(meName, wsISO));
-      if(dbl.any){
-        const key = `${meName}|${themName}|${wsISO}`;
-        state.doubleMDOChoice[key] = pick2.iso;
-        saveState();
-        const res = applyDoubleMDOIfNeeded(meName, themName, wsISO);
-        if(res.applied){
-          setPill(statusValidation, "VALIDATION: OK (MDO applied)", "ok");
-          pick=null;
-          render();
-          return;
-        }else{
-          setPill(statusValidation, `VALIDATION: ${res.errors[0]}`, "bad");
-          render();
-          return;
-        }
-      }
+      td.addEventListener("click", ()=>onCellClick(td));
+      tr.appendChild(td);
     }
-    // otherwise treat as new pick
-    pick = { side: pick2.side, personName: pick2.personName, iso: pick2.iso };
-    render();
-    return;
+
+    return tr;
   }
 
-  // Determine which iso belongs to ME and which to THEM
-  const isoMe = (pick.personName===meName) ? pick.iso : pick2.iso;
-  const isoThem = (pick.personName===themName) ? pick.iso : pick2.iso;
+  function onCellClick(td){
+    if(state.mode==="view") return;
 
-  if(state.mode==="swap"){
-    const res = doSwap(meName, themName, isoMe, isoThem);
+    const person=td.dataset.person;
+    const iso=td.dataset.iso;
+
+    if(person!==state.me && person!==state.them){
+      setPill(statusValidation, "VALIDATION: click only ME/THEM rows", "bad");
+      return;
+    }
+
+    if(!pick){
+      pick={person, iso};
+      render();
+      return;
+    }
+
+    // second click must be opposite person
+    if(pick.person===person){
+      pick={person, iso};
+      render();
+      return;
+    }
+
+    const isoMe = (pick.person===state.me) ? pick.iso : iso;
+    const isoThem = (pick.person===state.them) ? pick.iso : iso;
+
+    const res=doSwap(state.me, state.them, isoMe, isoThem);
     if(res.ok){
       setPill(statusValidation, "VALIDATION: OK (swapped)", "ok");
-      pick = null;
+      pick=null;
       render();
-      return;
     }else{
       setPill(statusValidation, `VALIDATION: ${res.errors[0]}`, "bad");
-      // keep pick for user
-      render();
-      return;
     }
   }
 
-  if(state.mode==="double"){
-    // First perform swap
-    const res = doSwap(meName, themName, isoMe, isoThem);
-    if(!res.ok){
-      setPill(statusValidation, `VALIDATION: ${res.errors[0]}`, "bad");
-      render();
-      return;
-    }
-    // Then check if double exists; if yes, require MDO choice
-    const wsISO = weekStartSundayISO(isoMe);
-    const dblRes = applyDoubleMDOIfNeeded(meName, themName, wsISO);
-    if(dblRes.needed && !dblRes.applied){
-      setPill(statusValidation, `VALIDATION: ${dblRes.errors[0]}`, "bad");
-      // keep pick cleared, now user must click ME row day to set MDO
-      pick = { side:"me", personName: meName, iso: isoMe };
-      render();
-      return;
-    }
-    setPill(statusValidation, "VALIDATION: OK (double handled)", "ok");
-    pick = null;
+  // Month dropdowns (works on Safari)
+  const startMonthSel=document.getElementById("startMonthSel");
+  const startYearSel=document.getElementById("startYearSel");
+  const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  for(let i=0;i<12;i++){
+    const o=document.createElement("option");
+    o.value=String(i+1).padStart(2,"0");
+    o.textContent=months[i];
+    startMonthSel.appendChild(o);
+  }
+  const now=new Date();
+  const baseYear=now.getFullYear();
+  for(let y=baseYear-1; y<=baseYear+3; y++){
+    const o=document.createElement("option");
+    o.value=String(y);
+    o.textContent=String(y);
+    startYearSel.appendChild(o);
+  }
+
+  function syncMonthDropdownFromState(){
+    const [yy,mm]=state.startMonthISO.split("-");
+    startYearSel.value=yy;
+    startMonthSel.value=mm;
+  }
+  function setStateMonthFromDropdown(){
+    const yy=startYearSel.value;
+    const mm=startMonthSel.value;
+    state.startMonthISO = `${yy}-${mm}`;
+    saveState();
     render();
-    return;
-  }
-}
-
-function currentValidationSummary(){
-  const errs = [];
-
-  // basic sanity: selected ME/THEM
-  if(state.mode!=="view"){
-    if(!state.me || !state.them) errs.push("Pick ME and SWAP WITH.");
-    if(state.me === state.them) errs.push("ME and SWAP WITH must be different.");
   }
 
-  // if baseline locked, ensure all swap changes are within same week
-  if(state.baselineLocked){
-    for(const ch of state.changeLog){
-      if(ch.type==="swap"){
-        if(!sameWeek(ch.isoA, ch.isoB)){
-          errs.push("Baseline locked: found a swap that crosses weeks.");
-          break;
-        }
-      }
-    }
-  }
+  document.getElementById("prevBtn").addEventListener("click", ()=>{
+    const d=parseISOMonth(state.startMonthISO);
+    state.startMonthISO=isoMonth(addMonths(d,-1));
+    saveState();
+    syncMonthDropdownFromState();
+    render();
+  });
+  document.getElementById("nextBtn").addEventListener("click", ()=>{
+    const d=parseISOMonth(state.startMonthISO);
+    state.startMonthISO=isoMonth(addMonths(d,1));
+    saveState();
+    syncMonthDropdownFromState();
+    render();
+  });
+  document.getElementById("thisBtn").addEventListener("click", ()=>{
+    state.startMonthISO=isoMonth(new Date());
+    saveState();
+    syncMonthDropdownFromState();
+    render();
+  });
 
-  return {ok: errs.length===0, errors:errs};
-}
+  startMonthSel.addEventListener("change", setStateMonthFromDropdown);
+  startYearSel.addEventListener("change", setStateMonthFromDropdown);
 
-/**
- * =========================
- * 8) FORM GENERATION (PRINT)
- * =========================
- * You said: do NOT show the form on screen; generate after swaps.
- * Here we generate a clean printable page (A4-ish) with a form-like layout.
- * This is NOT a pixel-perfect replica of your scanned form (that requires precise typography/positions),
- * but it outputs the same fields and day boxes.
- * If your supervisor rejects anything that’s not identical, you must replace this with an exact template render.
- */
-function openFormWindow(){
-  const meName = state.me;
-  const themName = state.them;
-  const month = state.startMonthISO; // just use start month for now
+  showMonthsSel.addEventListener("change", ()=>{
+    state.showMonths=Number(showMonthsSel.value);
+    saveState(); render();
+  });
+  modeSel.addEventListener("change", ()=>{
+    state.mode=modeSel.value;
+    pick=null;
+    saveState(); render();
+  });
+  meSel.addEventListener("change", ()=>{
+    state.me=meSel.value;
+    if(state.them===state.me) state.them=EMPLOYEES.find(e=>e.name!==state.me)?.name || state.me;
+    pick=null;
+    saveState(); render();
+  });
+  themSel.addEventListener("change", ()=>{
+    state.them=themSel.value;
+    if(state.them===state.me) state.them=EMPLOYEES.find(e=>e.name!==state.me)?.name || state.me;
+    pick=null;
+    saveState(); render();
+  });
 
-  // Create month day grid from current month only
-  const monthDate = parseISOMonth(state.startMonthISO);
-  const y = monthDate.getFullYear();
-  const m0 = monthDate.getMonth();
-  const dim = daysInMonth(y,m0);
+  document.getElementById("resetSwapsBtn").addEventListener("click", ()=>{
+    state.overrides={};
+    state.changeLog=[];
+    pick=null;
+    saveState();
+    setPill(statusValidation, "VALIDATION: reset", null);
+    render();
+  });
 
-  const meCodes = [];
-  const themCodes = [];
-  for(let d=1; d<=dim; d++){
-    const iso = isoDate(new Date(y,m0,d));
-    meCodes.push(displayCode(meName, iso));
-    themCodes.push(displayCode(themName, iso));
-  }
+  document.getElementById("lockBaselineBtn").addEventListener("click", ()=>{
+    state.baselineLocked=true;
+    saveState();
+    setPill(statusValidation, "VALIDATION: baseline locked", "ok");
+  });
+  document.getElementById("unlockBaselineBtn").addEventListener("click", ()=>{
+    state.baselineLocked=false;
+    saveState();
+    setPill(statusValidation, "VALIDATION: baseline unlocked", "ok");
+  });
 
-  const w = window.open("", "_blank");
-  if(!w) return;
+  document.getElementById("genFormBtn").addEventListener("click", ()=>{
+    const w=window.open("", "_blank");
+    if(!w) return;
+    w.document.write("<html><body><h2>Print this window to PDF</h2><p>Form generator placeholder (next step).</p></body></html>");
+    w.document.close();
+    w.focus();
+    w.print();
+  });
 
-  const css = `
-    @page { size: letter; margin: 0.5in; }
-    body { font-family: Arial, sans-serif; color:#000; }
-    .wrap { display:flex; gap:20px; }
-    .titleCol { writing-mode: vertical-rl; transform: rotate(180deg); font-weight:800; font-size:18px; }
-    .red { color:#b30000; font-weight:800; }
-    .line { border-bottom:1px solid #000; height:18px; margin-bottom:8px; }
-    .grid { border-collapse:collapse; font-family: ui-monospace, Menlo, Consolas, monospace; font-size:11px; }
-    .grid td, .grid th { border:1px solid #000; width:18px; height:18px; text-align:center; vertical-align:middle; padding:0; }
-    .label { font-weight:800; font-size:12px; margin:6px 0; }
-    .small { font-size:11px; }
-    .section { margin-bottom:14px; }
-    .row { display:flex; gap:14px; align-items:flex-end; }
-    .row .blk { flex:1; }
-  `;
+  // init sanity
+  if(!getEmp(state.me)) state.me=EMPLOYEES[0]?.name||"";
+  if(!getEmp(state.them) || state.them===state.me) state.them=EMPLOYEES.find(e=>e.name!==state.me)?.name || state.me;
 
-  const dayBoxes = (codes)=>`
-    <table class="grid">
-      <tr>${Array.from({length:dim},(_,i)=>`<th>${i+1}</th>`).join("")}</tr>
-      <tr>${codes.map(c=>`<td>${c==="HOL"?"HOL":(c||"")}</td>`).join("")}</tr>
-    </table>
-  `;
-
-  w.document.write(`
-    <!doctype html>
-    <html>
-      <head><meta charset="utf-8"/><title>Swap Form</title><style>${css}</style></head>
-      <body>
-        <div class="wrap">
-          <div class="titleCol">
-            TIME OFF OR SHIFT CHANGE REQUEST
-          </div>
-          <div style="flex:1">
-            <div class="section">
-              <div class="row">
-                <div class="blk">
-                  <div class="small">TO: SUPERVISOR</div>
-                  <div class="line"></div>
-                </div>
-                <div class="blk">
-                  <div class="small">DATE:</div>
-                  <div class="line">${new Date().toLocaleDateString()}</div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="blk">
-                  <div class="small">FROM:</div>
-                  <div class="line"></div>
-                </div>
-                <div class="blk">
-                  <div class="small">MONTH:</div>
-                  <div class="line">${month}</div>
-                </div>
-              </div>
-              <div class="red small">THIS REQUEST IS NOT APPROVED UNTIL YOU RECEIVE A SIGNED COPY OF THIS FORM</div>
-            </div>
-
-            <div class="section">
-              <div class="label">NAME</div>
-              <div class="line">${meName}</div>
-              <div class="label small">MY PRESENT SCHEDULE IS</div>
-              ${dayBoxes(meCodes)}
-            </div>
-
-            <div class="section">
-              <div class="label">NAME</div>
-              <div class="line">${themName} (swap with: ${meName})</div>
-              <div class="label small">TIME OFF OR CHANGE PERIOD REQUESTED</div>
-              ${dayBoxes(themCodes)}
-            </div>
-
-            <div class="section">
-              <div class="label small">ALL EMPLOYEES MUST SIGN</div><div class="line"></div>
-              <div class="label small">REASON FOR REQUEST</div><div class="line"></div>
-              <div class="label small">LIST PRESENT TIME BALANCE</div>
-              <div class="row">
-                <div class="blk"><div class="small">COMP. HOURS</div><div class="line"></div></div>
-                <div class="blk"><div class="small">VAC. HOURS</div><div class="line"></div></div>
-              </div>
-              <div class="label small">YOUR REQUEST HAS BEEN</div>
-              <div class="row">
-                <div class="blk"><div class="small">APPROVED</div><div class="line"></div></div>
-                <div class="blk"><div class="small">REJECTED</div><div class="line"></div></div>
-              </div>
-              <div class="label small">REASON FOR REJECTION</div><div class="line"></div>
-
-              <div class="row" style="margin-top:18px">
-                <div class="blk"><div class="small">ENTERED INTO COMPUTER</div><div class="line"></div></div>
-                <div class="blk"><div class="small">SUPERVISOR</div><div class="line"></div></div>
-                <div class="blk"><div class="small">DATE</div><div class="line"></div></div>
-              </div>
-
-              <div class="red small" style="margin-top:10px">
-                ** ALL REQUESTS WILL ONLY BE APPROVED AND SCHEDULED ON TUESDAY & THURSDAY **
-                &nbsp;&nbsp; IT IS YOUR RESPONSIBILITY TO FOLLOW UP ON THIS REQUEST
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <script>
-          window.onload = () => { window.print(); };
-        </script>
-      </body>
-    </html>
-  `);
-  w.document.close();
-}
-
-/**
- * =========================
- * 9) EVENTS
- * =========================
- */
-document.getElementById("prevBtn").addEventListener("click", ()=>{
-  const d = parseISOMonth(state.startMonthISO);
-  state.startMonthISO = isoMonth(addMonths(d,-1));
-  saveState(); render();
-});
-document.getElementById("nextBtn").addEventListener("click", ()=>{
-  const d = parseISOMonth(state.startMonthISO);
-  state.startMonthISO = isoMonth(addMonths(d,1));
-  saveState(); render();
-});
-document.getElementById("thisBtn").addEventListener("click", ()=>{
-  state.startMonthISO = isoMonth(new Date());
-  saveState(); render();
-});
-
-startMonthInput.addEventListener("change", ()=>{
-  state.startMonthISO = startMonthInput.value || isoMonth(new Date());
-  saveState(); render();
-});
-showMonthsSel.addEventListener("change", ()=>{
-  state.showMonths = Number(showMonthsSel.value);
-  saveState(); render();
-});
-modeSel.addEventListener("change", ()=>{
-  state.mode = modeSel.value;
-  pick=null;
-  saveState(); render();
-});
-meSel.addEventListener("change", ()=>{
-  state.me = meSel.value;
-  pick=null;
-  saveState(); render();
-});
-themSel.addEventListener("change", ()=>{
-  state.them = themSel.value;
-  pick=null;
-  saveState(); render();
-});
-
-document.getElementById("resetSwapsBtn").addEventListener("click", ()=>{
-  state.overrides = {};
-  state.changeLog = [];
-  state.doubleMDOChoice = {};
-  pick=null;
-  saveState();
-  setPill(statusValidation, "VALIDATION: reset", null);
-  render();
-});
-
-document.getElementById("genFormBtn").addEventListener("click", ()=>{
-  openFormWindow();
-});
-
-document.getElementById("lockBaselineBtn").addEventListener("click", ()=>{
-  state.baselineLocked = true;
+  syncMonthDropdownFromState();
   saveState();
   render();
-});
-document.getElementById("unlockBaselineBtn").addEventListener("click", ()=>{
-  state.baselineLocked = false;
-  saveState();
-  render();
-});
-
-/**
- * =========================
- * 10) INIT
- * =========================
- */
-(function init(){
-  // default start month = current if missing/invalid
-  if(!state.startMonthISO) state.startMonthISO = isoMonth(new Date());
-  if(!state.showMonths) state.showMonths = 3;
-  if(!state.mode) state.mode = "view";
-
-  // ensure overrides object
-  if(!state.overrides) state.overrides = {};
-  if(!state.changeLog) state.changeLog = [];
-  if(!state.doubleMDOChoice) state.doubleMDOChoice = {};
-
-  // ensure selected employees exist
-  if(!getEmp(state.me)) state.me = EMPLOYEES[0]?.name || "";
-  if(!getEmp(state.them) || state.them===state.me) state.them = EMPLOYEES[1]?.name || EMPLOYEES[0]?.name || "";
-
-  saveState();
-  render();
-})();
 </script>
 </body>
 </html>
