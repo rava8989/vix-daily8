@@ -1,50 +1,84 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Rotating Shift Schedule (12 Months)</title>
+  <title>Rotating Shift — Schedule + Swap</title>
+
+  <!-- Export helpers (JPG/PDF) -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
   <style>
     :root{
-      --border:#d6d6d6;
-      --muted:#666;
-      --bg:#fff;
-      --soft:#f7f7f7;
+      --ink:#111;
+      --muted:#6b6b6b;
+      --line:#d0d0d0;
+
+      /* schedule-like palette */
+      --hdr:#1b1b1b;
+      --hdr2:#2a2a2a;
+      --cell:#ffffff;
+      --cellAlt:#f3f3f3;
+      --cellAlt2:#e9e9e9;
+      --darkCell:#2b2b2b;
+      --darkText:#fff;
+
+      --accent:#111;
+      --warn:#b00020;
+
+      /* Code colors */
+      --codeA:#0f0f0f;   /* A night: dark */
+      --codeB:#f5f5f5;   /* B day: light */
+      --codeC:#d8d8d8;   /* C eve: mid */
+      --codeRDO:#2b2b2b; /* RDO: dark */
+      --codeMDO:#bdbdbd; /* MDO: grey */
+      --codeHOL:#fff2f2; /* HOL: light red bg */
+      --codeTIME:#eaf4ff;/* COMP/PE/SICK/IOD/DIF light blue */
+      --codeR:#efefef;   /* R reserve */
     }
+
+    *{ box-sizing:border-box; }
     body{
       margin:0;
       font-family: Arial, sans-serif;
-      background: var(--bg);
-      color:#111;
+      background:#fff;
+      color:var(--ink);
     }
+
     header{
-      padding:14px 16px;
-      border-bottom:1px solid var(--border);
+      border-bottom:1px solid var(--line);
+      background:#fff;
+      padding:12px 14px;
       display:flex;
       flex-wrap:wrap;
-      gap:12px;
+      gap:10px;
       align-items:flex-end;
       justify-content:space-between;
     }
+
     .controls{
       display:flex;
       flex-wrap:wrap;
       gap:10px;
       align-items:flex-end;
     }
+
     label{
       display:block;
       font-size:12px;
       color:#333;
       margin-bottom:6px;
     }
+
     select,input{
       padding:10px 12px;
-      border:1px solid var(--border);
+      border:1px solid var(--line);
       border-radius:10px;
-      min-width:230px;
+      min-width:220px;
       background:#fff;
     }
+
     button{
       padding:10px 14px;
       border:1px solid #111;
@@ -53,82 +87,181 @@
       cursor:pointer;
     }
     button:hover{ opacity:.85; }
+    button.primary{
+      background:#111;
+      color:#fff;
+    }
+    button.danger{
+      border-color:var(--warn);
+      color:var(--warn);
+    }
+
     .meta{
       font-size:12px;
       color:var(--muted);
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-      justify-content:flex-end;
+      max-width:520px;
       text-align:right;
     }
 
-    main{ padding:14px 16px 22px; }
-    .grid{
+    main{ padding:12px 14px 24px; }
+
+    .row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      font-size:12px;
+      color:#333;
+      background:#fff;
+    }
+    .pill.ok{ border-color:#2e7d32; color:#2e7d32; }
+    .pill.bad{ border-color:var(--warn); color:var(--warn); }
+
+    .gridWrap{
       display:grid;
       grid-template-columns: repeat(2, minmax(320px, 1fr));
       gap:14px;
+      margin-top:12px;
+    }
+    @media (min-width: 1200px){
+      .gridWrap{ grid-template-columns: repeat(4, minmax(260px, 1fr)); }
+    }
+
+    .twoPane{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
     }
     @media (min-width: 1100px){
-      .grid{ grid-template-columns: repeat(4, minmax(260px, 1fr)); }
+      .twoPane{ grid-template-columns: 1fr 1fr; }
     }
+
+    .paneHead{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:10px;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    .paneTitle{
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .paneSub{ font-size:12px; color:var(--muted); }
+
     .monthCard{
-      border:1px solid var(--border);
+      border:1px solid var(--line);
       border-radius:14px;
       overflow:hidden;
       background:#fff;
     }
     .monthHead{
       padding:10px 12px;
-      background:var(--soft);
-      border-bottom:1px solid var(--border);
+      background:var(--hdr);
+      color:#fff;
       display:flex;
       justify-content:space-between;
       align-items:baseline;
       gap:10px;
     }
-    .monthTitle{
-      font-weight:700;
-      font-size:14px;
-    }
-    .monthSub{
-      font-size:12px;
-      color:var(--muted);
-    }
-    table{
+    .monthTitle{ font-weight:800; font-size:14px; }
+    .monthSub{ font-size:12px; opacity:.85; }
+
+    table.cal{
       width:100%;
       border-collapse:collapse;
       table-layout:fixed;
       font-size:12px;
     }
-    th, td{
-      border:1px solid var(--border);
-      padding:6px 4px;
+    table.cal th, table.cal td{
+      border:1px solid #3a3a3a22;
       text-align:center;
       vertical-align:middle;
+      padding:0;
     }
-    th{
-      background:#fafafa;
-      font-weight:700;
+
+    table.cal th{
+      background:var(--hdr2);
+      color:#fff;
+      font-weight:800;
       font-size:11px;
+      padding:6px 4px;
+      border-color:#00000040;
     }
-    td{
-      height:44px;
+
+    td.cell{
+      height:46px;
+      position:relative;
+      background:var(--cell);
+      user-select:none;
     }
-    .dayNum{
-      font-size:10px;
-      color:var(--muted);
-      display:block;
-      margin-bottom:2px;
-    }
-    .blank{
-      background:#fcfcfc;
+    td.cell.alt{ background:var(--cellAlt); }
+    td.cell.alt2{ background:var(--cellAlt2); }
+    td.cell.blank{
+      background:#fafafa;
       color:#bbb;
     }
+    .dayNum{
+      position:absolute;
+      top:4px; left:6px;
+      font-size:10px;
+      color:#666;
+      font-weight:700;
+    }
+    .code{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+
+    /* code styling */
+    .A{ background:var(--codeA); color:#fff; }
+    .B{ background:var(--codeB); color:#111; }
+    .C{ background:var(--codeC); color:#111; }
+    .RDO{ background:var(--codeRDO); color:#fff; }
+    .MDO{ background:var(--codeMDO); color:#111; }
+    .HOL{ background:var(--codeHOL); color:#b00020; }
+    .COMP, .PE, .SICK, .IOD, .DIF{ background:var(--codeTIME); color:#111; }
+    .R{ background:var(--codeR); color:#111; }
+
+    /* swap selection + changed */
+    .selOutline{
+      outline: 3px solid #111;
+      outline-offset: -3px;
+    }
+    .chgOutline{
+      box-shadow: inset 0 0 0 3px #111;
+    }
+
+    .errors{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+      background:#fff;
+      font-size:12px;
+      color:#b00020;
+      white-space:pre-wrap;
+      line-height:1.35;
+    }
+
     .legend{
       margin-top:14px;
-      border:1px solid var(--border);
+      border:1px solid var(--line);
       border-radius:14px;
       padding:10px 12px;
       background:#fff;
@@ -136,103 +269,179 @@
       color:#222;
       line-height:1.35;
     }
-    .legend b{ font-weight:700; }
-    .pill{
+    .legend .tag{
       display:inline-block;
-      padding:3px 8px;
-      border:1px solid var(--border);
+      padding:4px 10px;
+      border:1px solid var(--line);
       border-radius:999px;
-      margin:2px 6px 2px 0;
+      margin:3px 6px 3px 0;
       background:#fff;
+      font-weight:700;
+    }
+
+    /* Hidden form stage (not shown during normal use) */
+    #formStage{
+      position:fixed;
+      left:-999999px;
+      top:0;
+      width:1100px;
+      height:850px;
+      background:#fff;
+    }
+    .paper{
+      width:1100px; height:850px;
+      position:relative;
+      overflow:hidden;
+      background:#fff;
+    }
+    .paper img{
+      position:absolute; inset:0;
+      width:1100px; height:850px;
+    }
+    .ftxt{
+      position:absolute;
+      font-family: Arial, sans-serif;
+      font-size:12px;
+      color:#111;
+      font-weight:600;
       white-space:nowrap;
     }
-    .note{
-      margin-top:10px;
-      font-size:12px;
-      color:var(--muted);
+    .ftxt.small{ font-size:11px; font-weight:600; }
+
+    .fgrid{
+      position:absolute;
+      display:grid;
+      grid-auto-flow:column;
+      grid-template-rows: 18px 18px; /* numbers row, code row */
+      gap:0;
     }
-    code{
-      background:#f3f3f3;
-      padding:2px 6px;
-      border-radius:6px;
+    .fcell{
+      width:15.3px;
+      height:18px;
+      border:1px solid #111;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family: Arial, sans-serif;
+      font-size:10px;
+      color:#111;
+      background:transparent;
     }
+    .fcode{
+      font-weight:800;
+      font-size:10px;
+    }
+    .fchg{
+      outline:2px solid #111;
+      outline-offset:-2px;
+    }
+
   </style>
 </head>
+
 <body>
 <header>
   <div class="controls">
     <div>
-      <label>Employee (Rotating Shift)</label>
-      <select id="employee"></select>
-    </div>
-    <div>
-      <label>Cycle Start (Day 1 of the 6-week loop)</label>
+      <label>Cycle Start (Day 1 of 6-week loop)</label>
       <input id="cycleStart" type="date" />
     </div>
+
     <div>
-      <label>Start Month</label>
+      <label>Start Month (view window)</label>
       <input id="startMonth" type="month" />
     </div>
+
     <div>
-      <label>Months shown</label>
+      <label>Months on screen</label>
       <select id="monthsShown">
         <option value="3">3</option>
         <option value="4" selected>4</option>
       </select>
     </div>
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+
+    <div class="row">
       <button id="prev">◀ Prev</button>
       <button id="next">Next ▶</button>
-      <button id="today">This Month</button>
+      <button id="thisMonth">This Month</button>
+      <button id="swapModeBtn" class="primary">Start Swap Mode</button>
+      <button id="resetSwaps" class="danger">Reset Swaps</button>
+      <button id="exportJpg">Export Form JPG</button>
+      <button id="exportPdf">Export Form PDF</button>
     </div>
   </div>
 
   <div class="meta">
-    <div>
-      Showing up to <b>12 months</b> forward (page through with Prev/Next).<br/>
-      Weeks are <b>Sun → Sat</b>.
-    </div>
+    View current month + forward up to <b>12 months</b> (page with Prev/Next).<br/>
+    Swap Mode: click a day on <b>Me</b>, then a day on <b>Them</b> to swap.
   </div>
 </header>
 
 <main>
-  <div id="monthsGrid" class="grid"></div>
+  <div class="row" style="justify-content:space-between;">
+    <div class="row" id="modePills">
+      <span class="pill" id="modePill">Mode: <b>View</b></span>
+      <span class="pill" id="statusPill">Validation: <b>—</b></span>
+      <span class="pill">Weeks: <b>Sun → Sat</b></span>
+    </div>
+    <div class="row" style="gap:10px;">
+      <div id="viewSelectors"></div>
+      <div id="swapSelectors" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div id="content"></div>
+
+  <div class="errors" id="errors" style="display:none;"></div>
 
   <div class="legend">
-    <div style="margin-bottom:6px;"><b>Codes</b></div>
-    <span class="pill"><b>A</b> = night shift</span>
-    <span class="pill"><b>B</b> = day shift</span>
-    <span class="pill"><b>C</b> = evening shift</span>
-    <span class="pill"><b>R</b> = reserve (B tour)</span>
-    <span class="pill"><b>RDO</b> = regular day off</span>
-    <span class="pill"><b>MDO</b> = mutual day off</span>
-    <span class="pill"><b>HOL</b> = holiday</span>
-    <span class="pill"><b>COMP</b> = comp time</span>
-    <span class="pill"><b>PE</b> = personal excuse</span>
-    <span class="pill"><b>SICK</b> = sick leave</span>
-    <span class="pill"><b>IOD</b> = injury on duty</span>
-    <span class="pill"><b>DIF</b> = death in family</span>
-
-    <div class="note">
-      This is the <b>rotating shift</b> (mid section) logic only (slots 1–6).<br/>
-      To match your real schedule, replace the <code>pattern42</code> array in the code with your exact 42-day Slot-1 loop.
+    <div style="font-weight:800; margin-bottom:6px;">Codes (Rotating Shift)</div>
+    <span class="tag">A</span> night&nbsp;&nbsp;
+    <span class="tag">B</span> day&nbsp;&nbsp;
+    <span class="tag">C</span> evening&nbsp;&nbsp;
+    <span class="tag">R</span> reserve (B tour)&nbsp;&nbsp;
+    <span class="tag">RDO</span> regular day off&nbsp;&nbsp;
+    <span class="tag">MDO</span> mutual day off&nbsp;&nbsp;
+    <span class="tag">HOL</span> holiday&nbsp;&nbsp;
+    <span class="tag">COMP</span> comp time&nbsp;&nbsp;
+    <span class="tag">PE</span> personal excuse&nbsp;&nbsp;
+    <span class="tag">SICK</span> sick leave&nbsp;&nbsp;
+    <span class="tag">IOD</span> injury on duty&nbsp;&nbsp;
+    <span class="tag">DIF</span> death in family
+    <div style="margin-top:10px; color:var(--muted); font-size:12px;">
+      This is the <b>mid “rotating shift”</b> only. Replace <code>pattern42</code> with your exact 42-day Slot-1 loop to match the real schedule.
+    </div>
+    <div style="margin-top:6px; color:var(--muted); font-size:12px;">
+      Form export requires a file in your repo named <code>form-template.jpg</code> (your perfect form scan).
     </div>
   </div>
 </main>
 
+<!-- Hidden form render stage (for export only) -->
+<div id="formStage">
+  <div class="paper" id="paper">
+    <img src="form-template.jpg" alt="Form Template" />
+    <!-- filled-in text -->
+    <div class="ftxt" id="f_to" style="left:145px; top:650px;"></div>
+    <div class="ftxt" id="f_from" style="left:155px; top:675px;"></div>
+    <div class="ftxt" id="f_month" style="left:165px; top:700px;"></div>
+
+    <div class="ftxt" id="f_name1" style="left:240px; top:720px;"></div>
+    <div class="ftxt" id="f_name2" style="left:240px; top:410px;"></div>
+
+    <div class="ftxt" id="f_date1" style="left:820px; top:110px;"></div>
+    <div class="ftxt" id="f_date2" style="left:820px; top:640px;"></div>
+
+    <!-- grids -->
+    <div id="f_present" class="fgrid" style="left: 340px; top: 85px;"></div>
+    <div id="f_requested" class="fgrid" style="left: 340px; top: 230px;"></div>
+  </div>
+</div>
+
 <script>
-/**
- * ============================
- * 1) EMPLOYEES (mid section)
- * ============================
- * These names/slots match the rotating-shift block you showed:
- * Slot 1: Kingston Joseph C, Rodriguez Roger
- * Slot 2: Joseph George R, Ramanrane Ashram
- * Slot 3: Segovia Eduardo M, Victoria Robert
- * Slot 4: Bouaziz Abdelghani, Gragossian Alani
- * Slot 5: Handel Joseph, Rakhmanov Ravshan
- * Slot 6: Rodriguez Alexander, Svenjak Mark
- */
+/* =========================
+   EMPLOYEES (rotating shift)
+   ========================= */
 const employees = [
   { name: "Kingston, Joseph C", slot: 1 },
   { name: "Rodriguez, Roger", slot: 1 },
@@ -253,21 +462,16 @@ const employees = [
   { name: "Svenjak, Mark", slot: 6 },
 ];
 
-/**
- * ============================
- * 2) THE 42-DAY LOOP (Slot 1)
- * ============================
- * IMPORTANT: Replace this with your exact Slot-1 42-day pattern.
- * Length MUST be exactly 42.
- *
- * The code below is a placeholder that simply makes:
- *  - 5 B shifts + 2 RDO each week
- * It WILL NOT match your real schedule until you paste the real pattern.
- */
+/* =========================
+   SLOT-1 42 DAY LOOP
+   Replace this with your REAL loop.
+   MUST be length 42 exactly.
+   ========================= */
 const pattern42 = (() => {
+  // PLACEHOLDER: 5 B shifts + 2 RDO each week
   const arr = [];
-  for (let i = 0; i < 42; i++){
-    const dow = i % 7; // 0 Sun .. 6 Sat
+  for (let i=0; i<42; i++){
+    const dow = i % 7; // 0 Sun..6 Sat
     if (dow === 0 || dow === 6) arr.push("RDO");
     else arr.push("B");
   }
@@ -275,26 +479,29 @@ const pattern42 = (() => {
 })();
 
 const CYCLE_LEN = 42;
+const msPerDay = 24*60*60*1000;
 
-function pad2(n){ return String(n).padStart(2, "0"); }
-function isoDate(y, m1to12, d){ return `${y}-${pad2(m1to12)}-${pad2(d)}`; }
+const TIME_OFF_CODES = new Set(["COMP","PE","HOL","SICK","IOD","DIF"]);
+const WORK_CODES = new Set(["A","B","C","R"]);
+const OFF_CODES = new Set(["RDO","MDO"]);
+const DOUBLES = new Set(["A/B","B/C"]); // if you ever use these
 
-function daysInMonth(y, m1to12){
-  return new Date(y, m1to12, 0).getDate();
+function pad2(n){ return String(n).padStart(2,"0"); }
+function isoDate(y,m1to12,d){ return `${y}-${pad2(m1to12)}-${pad2(d)}`; }
+function startOfDay(iso){ const x=new Date(iso); x.setHours(0,0,0,0); return x; }
+function daysBetween(aISO,bISO){ return Math.floor((startOfDay(bISO)-startOfDay(aISO))/msPerDay); }
+function daysInMonth(y,m1to12){ return new Date(y,m1to12,0).getDate(); }
+function addMonths(y,m1to12,delta){
+  const d = new Date(y, (m1to12-1) + delta, 1);
+  return { y: d.getFullYear(), m: d.getMonth()+1 };
 }
-
-function startOfDay(d){
-  const x = new Date(d);
-  x.setHours(0,0,0,0);
-  return x;
+function monthLabel(y,m1to12){
+  return new Date(y,m1to12-1,1).toLocaleString(undefined,{month:"long", year:"numeric"});
 }
-
-function daysBetween(aISO, bISO){
-  const a = startOfDay(aISO);
-  const b = startOfDay(bISO);
-  const msPerDay = 24*60*60*1000;
-  return Math.floor((b - a) / msPerDay);
-}
+function dowHeaders(){ return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]; }
+function dow0Sun(iso){ return new Date(iso+"T00:00:00").getDay(); }
+function isWeekday(iso){ const d=dow0Sun(iso); return d>=1 && d<=5; }
+function isWeekend(iso){ const d=dow0Sun(iso); return d===0 || d===6; }
 
 function codeForDate(dateISO, slot, cycleStartISO){
   const days = daysBetween(cycleStartISO, dateISO);
@@ -303,158 +510,675 @@ function codeForDate(dateISO, slot, cycleStartISO){
   return pattern42[idx];
 }
 
-function monthName(y, m1to12){
-  return new Date(y, m1to12-1, 1).toLocaleString(undefined, { month: "long", year: "numeric" });
+function isOpen(code){
+  const x = (code ?? "").trim().toUpperCase();
+  return x === "" || x === "OPEN";
+}
+function normCode(code){ return (code ?? "").trim().toUpperCase(); }
+
+function weekKeyForISO(iso){
+  const dt = new Date(iso+"T00:00:00");
+  const dow = dt.getDay(); // 0=Sun
+  dt.setDate(dt.getDate() - dow);
+  dt.setHours(0,0,0,0);
+  return dt.toISOString().slice(0,10);
 }
 
-function dowHeaders(){
-  return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-}
-
-function buildMonthTable(y, m1to12, slot, cycleStartISO){
-  const dim = daysInMonth(y, m1to12);
-  const first = new Date(y, m1to12-1, 1);
-  const firstDow = first.getDay(); // 0 Sun..6 Sat
-
-  // Build calendar cells: leading blanks + days + trailing blanks to complete weeks
+function buildMonthCells(y,m1to12){
+  const dim = daysInMonth(y,m1to12);
+  const firstDow = new Date(y,m1to12-1,1).getDay(); // 0..6
   const cells = [];
-  for (let i=0;i<firstDow;i++) cells.push(null);
-  for (let d=1; d<=dim; d++){
-    const iso = isoDate(y, m1to12, d);
-    const code = codeForDate(iso, slot, cycleStartISO);
-    cells.push({ d, iso, code });
-  }
-  while (cells.length % 7 !== 0) cells.push(null);
-
-  // Create table HTML
-  let html = `<table><thead><tr>`;
-  for (const h of dowHeaders()) html += `<th>${h}</th>`;
-  html += `</tr></thead><tbody>`;
-
-  for (let r=0; r<cells.length; r+=7){
-    html += `<tr>`;
-    for (let c=0; c<7; c++){
-      const cell = cells[r+c];
-      if (!cell){
-        html += `<td class="blank"></td>`;
-        continue;
-      }
-      html += `<td>
-        <span class="dayNum">${cell.d}</span>
-        <div>${cell.code}</div>
-      </td>`;
-    }
-    html += `</tr>`;
-  }
-  html += `</tbody></table>`;
-  return html;
+  for(let i=0;i<firstDow;i++) cells.push(null);
+  for(let d=1; d<=dim; d++) cells.push(d);
+  while(cells.length % 7 !== 0) cells.push(null);
+  return { dim, cells };
 }
 
-/**
- * ============================
- * UI State: show 3-4 months at a time,
- * browse up to 12 months ahead from Start Month.
- * ============================
- */
-const elEmployee = document.getElementById("employee");
+/* =========================
+   STATE
+   ========================= */
 const elCycleStart = document.getElementById("cycleStart");
 const elStartMonth = document.getElementById("startMonth");
 const elMonthsShown = document.getElementById("monthsShown");
-const monthsGrid = document.getElementById("monthsGrid");
+const elModePill = document.getElementById("modePill");
+const elStatusPill = document.getElementById("statusPill");
+const elErrors = document.getElementById("errors");
+const elContent = document.getElementById("content");
 
-let pageOffset = 0; // 0.. (12 - monthsShown)
+const elViewSelectors = document.getElementById("viewSelectors");
+const elSwapSelectors = document.getElementById("swapSelectors");
 
-function fillEmployees(){
-  elEmployee.innerHTML = employees.map((e, i) => (
-    `<option value="${i}">${e.name} (slot ${e.slot})</option>`
-  )).join("");
+let pageOffset = 0;          // 0..(12-monthsShown)
+let swapMode = false;
+let viewEmpIndex = 1;        // default
+let meIndex = 1;
+let themIndex = 2;
+
+let baseSchedules = null;    // { personIndex -> { iso -> code } } for all in view window
+let reqSchedules = null;     // same shape; mutated by swaps
+let changed = null;          // { personIndex -> Set(iso) } only for “requested” highlight
+let pick = null;             // { side:'me'|'them', iso }
+
+/* =========================
+   UI BUILDERS
+   ========================= */
+function buildSelectors(){
+  // View selector
+  elViewSelectors.innerHTML = `
+    <div>
+      <label>Employee (View mode)</label>
+      <select id="viewEmp" style="min-width:260px;"></select>
+    </div>
+  `;
+  const viewEmp = document.getElementById("viewEmp");
+  viewEmp.innerHTML = employees.map((e,i)=>`<option value="${i}">${e.name} (slot ${e.slot})</option>`).join("");
+  viewEmp.value = String(viewEmpIndex);
+  viewEmp.addEventListener("change", ()=>{
+    viewEmpIndex = Number(viewEmp.value);
+    render();
+  });
+
+  // Swap selectors
+  elSwapSelectors.innerHTML = `
+    <div>
+      <label>Me</label>
+      <select id="meEmp" style="min-width:260px;"></select>
+    </div>
+    <div>
+      <label>Swap With</label>
+      <select id="themEmp" style="min-width:260px;"></select>
+    </div>
+  `;
+  const meEmp = document.getElementById("meEmp");
+  const themEmp = document.getElementById("themEmp");
+  const opts = employees.map((e,i)=>`<option value="${i}">${e.name} (slot ${e.slot})</option>`).join("");
+  meEmp.innerHTML = opts;
+  themEmp.innerHTML = opts;
+  meEmp.value = String(meIndex);
+  themEmp.value = String(themIndex);
+
+  meEmp.addEventListener("change", ()=>{
+    meIndex = Number(meEmp.value);
+    resetSwapState(); // keep consistent
+    render();
+  });
+  themEmp.addEventListener("change", ()=>{
+    themIndex = Number(themEmp.value);
+    resetSwapState();
+    render();
+  });
 }
 
 function setDefaults(){
   const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = now.getMonth() + 1;
-
-  elStartMonth.value = `${yyyy}-${pad2(mm)}`;
-
-  // Default cycleStart: today (you should set to your known anchor)
-  elCycleStart.value = isoDate(yyyy, mm, now.getDate());
+  const y = now.getFullYear();
+  const m = now.getMonth()+1;
+  elStartMonth.value = `${y}-${pad2(m)}`;
+  elCycleStart.value = isoDate(y,m,now.getDate());
 }
 
-function addMonths(yyyy, mm1to12, delta){
-  const d = new Date(yyyy, mm1to12-1 + delta, 1);
-  return { y: d.getFullYear(), m: d.getMonth()+1 };
+/* =========================
+   SCHEDULE BUILD
+   ========================= */
+function buildWindowMonths(){
+  const monthsShown = Number(elMonthsShown.value);
+  const [startY, startM] = elStartMonth.value.split("-").map(Number);
+  const maxOffset = Math.max(0, 12 - monthsShown);
+  pageOffset = Math.max(0, Math.min(pageOffset, maxOffset));
+
+  const months = [];
+  for(let i=0;i<monthsShown;i++){
+    const {y,m} = addMonths(startY,startM,pageOffset+i);
+    months.push({y,m});
+  }
+  return months;
 }
 
-function clamp(n, lo, hi){
-  return Math.max(lo, Math.min(hi, n));
+function buildScheduleMapForPerson(personIndex, months){
+  const person = employees[personIndex];
+  const map = new Map(); // iso -> code
+  for(const {y,m} of months){
+    const dim = daysInMonth(y,m);
+    for(let d=1; d<=dim; d++){
+      const iso = isoDate(y,m,d);
+      const code = codeForDate(iso, person.slot, elCycleStart.value);
+      map.set(iso, code);
+    }
+  }
+  return map;
 }
 
-function render(){
-  if (pattern42.length !== 42){
-    monthsGrid.innerHTML = `<div style="color:#c00;">pattern42 must be exactly 42 items. It is ${pattern42.length}.</div>`;
+function ensureSchedules(months){
+  // base for all people (so we can swap without rebuilding)
+  baseSchedules = new Map();
+  reqSchedules = new Map();
+  changed = new Map();
+
+  for(let i=0;i<employees.length;i++){
+    const base = buildScheduleMapForPerson(i, months);
+    baseSchedules.set(i, base);
+
+    const req = new Map(base); // copy
+    reqSchedules.set(i, req);
+
+    changed.set(i, new Set());
+  }
+}
+
+function resetSwapState(){
+  pick = null;
+  // reset requested back to base for everyone
+  if(baseSchedules && reqSchedules){
+    for(let i=0;i<employees.length;i++){
+      reqSchedules.set(i, new Map(baseSchedules.get(i)));
+      changed.set(i, new Set());
+    }
+  }
+  setValidationUI([], true);
+}
+
+/* =========================
+   VALIDATION (core rules)
+   - 2 RDO + 5 shifts per week unless time-off codes apply
+   - Doubles require MDO (if doubles exist)
+   - No open shift allowed (blank) in requested
+   - Week buckets Sun-Sat
+   ========================= */
+function validatePersonWindow(personIndex, months, useRequested=true){
+  const errs = [];
+  const schedule = useRequested ? reqSchedules.get(personIndex) : baseSchedules.get(personIndex);
+
+  // collect ISO list from months
+  const isos = [];
+  for(const {y,m} of months){
+    const dim = daysInMonth(y,m);
+    for(let d=1; d<=dim; d++){
+      isos.push(isoDate(y,m,d));
+    }
+  }
+
+  // bucket by week
+  const buckets = new Map(); // weekKey -> array of iso
+  for(const iso of isos){
+    const wk = weekKeyForISO(iso);
+    const arr = buckets.get(wk) ?? [];
+    arr.push(iso);
+    buckets.set(wk, arr);
+  }
+
+  for(const [wk, arr] of buckets.entries()){
+    let rdoCount = 0;
+    let mdoCount = 0;
+    let shifts = 0;
+    let doubles = 0;
+    let hasTimeOff = false;
+
+    for(const iso of arr){
+      const code = normCode(schedule.get(iso));
+      if(isOpen(code)){
+        errs.push(`OPEN/blank not allowed: ${employees[personIndex].name} has empty code on ${iso}.`);
+        continue;
+      }
+
+      if (TIME_OFF_CODES.has(code)) hasTimeOff = true;
+
+      if(code === "RDO") rdoCount++;
+      if(code === "MDO") mdoCount++;
+
+      if(DOUBLES.has(code)){
+        doubles++;
+        shifts += 2;
+      } else if(WORK_CODES.has(code)) {
+        shifts += 1;
+      } else if(OFF_CODES.has(code) || TIME_OFF_CODES.has(code)) {
+        // no shift worked
+      } else {
+        // unknown but allow (some sites use e.g. A/C)
+        // If you want strict: flag unknown.
+      }
+    }
+
+    if(!hasTimeOff){
+      if(rdoCount !== 2){
+        errs.push(`Week ${wk}: ${employees[personIndex].name} must have exactly 2 RDO (found ${rdoCount}).`);
+      }
+      if(shifts !== 5){
+        errs.push(`Week ${wk}: ${employees[personIndex].name} must have 5 shifts (found ${shifts}).`);
+      }
+    }
+
+    if(doubles > 0 && mdoCount < doubles){
+      errs.push(`Week ${wk}: ${employees[personIndex].name} has doubles=${doubles} but MDO=${mdoCount}. Each double requires an MDO.`);
+    }
+  }
+
+  return errs;
+}
+
+function validateSwapWindow(months){
+  // validate both me and them requested schedules
+  const errs = [];
+  errs.push(...validatePersonWindow(meIndex, months, true));
+  errs.push(...validatePersonWindow(themIndex, months, true));
+  return errs;
+}
+
+function setValidationUI(errs, okIfEmpty=false){
+  const ok = okIfEmpty ? true : (errs.length === 0);
+  elStatusPill.innerHTML = `Validation: <b>${ok ? "OK" : (errs.length + " issue(s)")}</b>`;
+  elStatusPill.className = "pill " + (ok ? "ok" : "bad");
+
+  if(ok){
+    elErrors.style.display = "none";
+    elErrors.textContent = "";
+  } else {
+    elErrors.style.display = "block";
+    elErrors.textContent = errs.map(e=>"• "+e).join("\n");
+  }
+}
+
+/* =========================
+   RENDER CALENDARS
+   ========================= */
+function cellClassForCode(code){
+  const c = normCode(code);
+  if(!c) return "";
+  // support A/C/B, RDO etc
+  if(["A","B","C","RDO","MDO","HOL","COMP","PE","SICK","IOD","DIF","R"].includes(c)) return c;
+  return ""; // unknown code uses default cell style
+}
+
+function renderMonthCard(personIndex, month, useRequested, sideLabel){
+  const person = employees[personIndex];
+  const {y,m} = month;
+  const {cells, dim} = buildMonthCells(y,m);
+  const schedule = useRequested ? reqSchedules.get(personIndex) : baseSchedules.get(personIndex);
+  const changedSet = changed.get(personIndex);
+
+  const head = `
+    <div class="monthHead">
+      <div>
+        <div class="monthTitle">${monthLabel(y,m)}</div>
+        <div class="monthSub">${person.name} — slot ${person.slot}${sideLabel ? " — " + sideLabel : ""}</div>
+      </div>
+      <div class="monthSub">${y}-${pad2(m)}</div>
+    </div>
+  `;
+
+  let html = head + `<table class="cal"><thead><tr>`;
+  for(const h of dowHeaders()) html += `<th>${h}</th>`;
+  html += `</tr></thead><tbody>`;
+
+  for(let r=0; r<cells.length; r+=7){
+    html += `<tr>`;
+    for(let c=0; c<7; c++){
+      const day = cells[r+c];
+      if(day === null){
+        html += `<td class="cell blank"></td>`;
+        continue;
+      }
+      const iso = isoDate(y,m,day);
+      const code = schedule.get(iso) ?? "";
+      const codeNorm = normCode(code);
+      const codeCls = cellClassForCode(codeNorm);
+
+      const alt = ((r/7) % 2 === 0) ? "alt" : "alt2";
+      const isChanged = changedSet?.has(iso);
+      const chgCls = isChanged ? "chgOutline" : "";
+
+      // Swap pick outline
+      const sel = (pick && pick.iso === iso && ((pick.side === "me" && personIndex === meIndex) || (pick.side === "them" && personIndex === themIndex))) ? "selOutline" : "";
+
+      // Click enabled only in swapMode and only for Me/Them panes
+      const clickable = swapMode && (personIndex === meIndex || personIndex === themIndex);
+
+      html += `
+        <td class="cell ${alt} ${chgCls} ${sel}"
+            data-iso="${iso}"
+            data-person="${personIndex}"
+            ${clickable ? 'data-click="1"' : ""}>
+          <span class="dayNum">${day}</span>
+          <div class="code ${codeCls}">${codeNorm}</div>
+        </td>
+      `;
+    }
+    html += `</tr>`;
+  }
+
+  html += `</tbody></table>`;
+  return `<div class="monthCard">${html}</div>`;
+}
+
+function renderViewMode(months){
+  const container = document.createElement("div");
+  container.className = "gridWrap";
+  for(const month of months){
+    container.insertAdjacentHTML("beforeend", renderMonthCard(viewEmpIndex, month, false, "Present"));
+  }
+  elContent.innerHTML = "";
+  elContent.appendChild(container);
+}
+
+function renderSwapMode(months){
+  const wrap = document.createElement("div");
+  wrap.className = "twoPane";
+
+  const left = document.createElement("div");
+  const right = document.createElement("div");
+
+  left.innerHTML = `
+    <div class="paneHead">
+      <div>
+        <div class="paneTitle">ME</div>
+        <div class="paneSub">${employees[meIndex].name} (slot ${employees[meIndex].slot})</div>
+      </div>
+      <div class="paneSub">Click a day here, then a day on THEM to swap</div>
+    </div>
+    <div class="gridWrap" style="grid-template-columns: repeat(2, minmax(320px, 1fr));">
+      ${months.map(m => renderMonthCard(meIndex, m, true, "Requested")).join("")}
+    </div>
+  `;
+
+  right.innerHTML = `
+    <div class="paneHead">
+      <div>
+        <div class="paneTitle">THEM</div>
+        <div class="paneSub">${employees[themIndex].name} (slot ${employees[themIndex].slot})</div>
+      </div>
+      <div class="paneSub">…then click a day here to complete swap</div>
+    </div>
+    <div class="gridWrap" style="grid-template-columns: repeat(2, minmax(320px, 1fr));">
+      ${months.map(m => renderMonthCard(themIndex, m, true, "Requested")).join("")}
+    </div>
+  `;
+
+  wrap.appendChild(left);
+  wrap.appendChild(right);
+
+  elContent.innerHTML = "";
+  elContent.appendChild(wrap);
+}
+
+function wireCellClicks(months){
+  elContent.querySelectorAll('td[data-click="1"]').forEach(td=>{
+    td.addEventListener("click", ()=>{
+      const iso = td.getAttribute("data-iso");
+      const person = Number(td.getAttribute("data-person"));
+      if(!iso || Number.isNaN(person)) return;
+
+      const side = (person === meIndex) ? "me" : "them";
+      handleSwapClick(side, iso, months);
+    });
+  });
+}
+
+/* =========================
+   SWAP CLICK LOGIC
+   ========================= */
+function swapCodes(isoMe, isoThem){
+  const meMap = reqSchedules.get(meIndex);
+  const themMap = reqSchedules.get(themIndex);
+
+  const a = meMap.get(isoMe);
+  const b = themMap.get(isoThem);
+
+  meMap.set(isoMe, b);
+  themMap.set(isoThem, a);
+
+  changed.get(meIndex).add(isoMe);
+  changed.get(themIndex).add(isoThem);
+}
+
+function handleSwapClick(side, iso, months){
+  // First click selects; second click on opposite side swaps
+  if(!pick){
+    pick = {side, iso};
+    render(); // to show outline
     return;
   }
 
-  const emp = employees[Number(elEmployee.value)];
-  const monthsShown = Number(elMonthsShown.value);
+  if(pick.side === side){
+    // change selection
+    pick = {side, iso};
+    render();
+    return;
+  }
 
-  const [startY, startM] = elStartMonth.value.split("-").map(Number);
+  // Determine which iso belongs to which person
+  const isoMe = (pick.side === "me") ? pick.iso : iso;
+  const isoThem = (pick.side === "them") ? pick.iso : iso;
 
-  // allow browsing within 0..(12-monthsShown)
-  const maxOffset = Math.max(0, 12 - monthsShown);
-  pageOffset = clamp(pageOffset, 0, maxOffset);
+  // Tentative swap then validate; if invalid, revert
+  const meMap = reqSchedules.get(meIndex);
+  const themMap = reqSchedules.get(themIndex);
 
-  monthsGrid.innerHTML = "";
+  const beforeMe = meMap.get(isoMe);
+  const beforeThem = themMap.get(isoThem);
 
-  for (let i=0; i<monthsShown; i++){
-    const { y, m } = addMonths(startY, startM, pageOffset + i);
+  swapCodes(isoMe, isoThem);
 
-    const card = document.createElement("div");
-    card.className = "monthCard";
+  const errs = validateSwapWindow(months);
+  if(errs.length > 0){
+    // revert swap
+    meMap.set(isoMe, beforeMe);
+    themMap.set(isoThem, beforeThem);
 
-    const head = document.createElement("div");
-    head.className = "monthHead";
-    head.innerHTML = `
-      <div>
-        <div class="monthTitle">${monthName(y, m)}</div>
-        <div class="monthSub">${emp.name} — slot ${emp.slot}</div>
-      </div>
-      <div class="monthSub">${y}-${pad2(m)}</div>
-    `;
+    // also revert changed markers for those iso if they now match base
+    const baseMe = baseSchedules.get(meIndex).get(isoMe);
+    const baseThem = baseSchedules.get(themIndex).get(isoThem);
 
-    const body = document.createElement("div");
-    body.innerHTML = buildMonthTable(y, m, emp.slot, elCycleStart.value);
+    if(meMap.get(isoMe) === baseMe) changed.get(meIndex).delete(isoMe);
+    if(themMap.get(isoThem) === baseThem) changed.get(themIndex).delete(isoThem);
 
-    card.appendChild(head);
-    card.appendChild(body);
-    monthsGrid.appendChild(card);
+    pick = null;
+    render();
+    setValidationUI(errs);
+    return;
+  }
+
+  pick = null;
+  render();
+  setValidationUI([], false);
+}
+
+/* =========================
+   FORM EXPORT (uses your exact template)
+   Requires: form-template.jpg in repo root
+   ========================= */
+function buildFormOverlay(){
+  // Fill minimal fields (you can extend later)
+  const me = employees[meIndex].name;
+  const them = employees[themIndex].name;
+
+  document.getElementById("f_to").textContent = "";     // supervisor fill-in
+  document.getElementById("f_from").textContent = "";   // optional
+  document.getElementById("f_month").textContent = elStartMonth.value; // month as YYYY-MM
+
+  document.getElementById("f_name1").textContent = me;
+  document.getElementById("f_name2").textContent = `${me} (swap with: ${them})`;
+
+  const today = new Date().toLocaleDateString();
+  document.getElementById("f_date1").textContent = today;
+  document.getElementById("f_date2").textContent = today;
+
+  // Build present/requested grids for the ACTIVE month only (start month)
+  const [y,m] = elStartMonth.value.split("-").map(Number);
+  const dim = daysInMonth(y,m);
+
+  const present = document.getElementById("f_present");
+  const requested = document.getElementById("f_requested");
+  present.innerHTML = "";
+  requested.innerHTML = "";
+
+  // Always 1..31 like your paper
+  const baseMe = baseSchedules.get(meIndex);
+  const reqMe = reqSchedules.get(meIndex);
+  const chgSet = changed.get(meIndex);
+
+  for(let d=1; d<=31; d++){
+    // number row
+    const n = document.createElement("div");
+    n.className = "fcell";
+    n.textContent = String(d);
+    present.appendChild(n);
+
+    const n2 = document.createElement("div");
+    n2.className = "fcell";
+    n2.textContent = String(d);
+    requested.appendChild(n2);
+  }
+
+  for(let d=1; d<=31; d++){
+    const iso = (d<=dim) ? isoDate(y,m,d) : null;
+
+    const codeBase = iso ? normCode(baseMe.get(iso)) : "";
+    const codeReq = iso ? normCode(reqMe.get(iso)) : "";
+
+    const c1 = document.createElement("div");
+    c1.className = "fcell fcode";
+    c1.textContent = codeBase;
+    present.appendChild(c1);
+
+    const c2 = document.createElement("div");
+    c2.className = "fcell fcode";
+    c2.textContent = codeReq;
+
+    if(iso && chgSet.has(iso)) c2.classList.add("fchg");
+
+    requested.appendChild(c2);
   }
 }
 
-// Controls
-document.getElementById("prev").addEventListener("click", () => {
+async function exportAsJpg(){
+  buildFormOverlay();
+
+  const paper = document.getElementById("paper");
+  const canvas = await html2canvas(paper, {backgroundColor:"#ffffff", scale:2});
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.98);
+
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = `swap-form-${elStartMonth.value}.jpg`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function exportAsPdf(){
+  buildFormOverlay();
+
+  const paper = document.getElementById("paper");
+  const canvas = await html2canvas(paper, {backgroundColor:"#ffffff", scale:2});
+  const imgData = canvas.toDataURL("image/jpeg", 0.98);
+
+  const { jsPDF } = window.jspdf;
+  // Letter landscape is 11 x 8.5 inches
+  const pdf = new jsPDF({ orientation:"landscape", unit:"in", format:"letter" });
+  pdf.addImage(imgData, "JPEG", 0, 0, 11, 8.5);
+  pdf.save(`swap-form-${elStartMonth.value}.pdf`);
+}
+
+/* =========================
+   MAIN RENDER
+   ========================= */
+function render(){
+  if(pattern42.length !== 42){
+    elContent.innerHTML = `<div class="errors" style="display:block;">pattern42 must be exactly 42 items. It is ${pattern42.length}.</div>`;
+    return;
+  }
+
+  const months = buildWindowMonths();
+
+  // rebuild schedules if needed
+  if(!baseSchedules){
+    ensureSchedules(months);
+  } else {
+    // If months window changed, rebuild base+req entirely to keep consistent
+    // (If you want to preserve swaps across paging, we can store swaps separately. For now: swaps are for the current window.)
+    ensureSchedules(months);
+    pick = null;
+    setValidationUI([], true);
+  }
+
+  // mode selectors visibility
+  if(swapMode){
+    elViewSelectors.style.display = "none";
+    elSwapSelectors.style.display = "block";
+    elModePill.innerHTML = `Mode: <b>Swap</b>`;
+    renderSwapMode(months);
+    wireCellClicks(months);
+
+    // validate current requested state
+    const errs = validateSwapWindow(months);
+    setValidationUI(errs, false);
+  } else {
+    elViewSelectors.style.display = "block";
+    elSwapSelectors.style.display = "none";
+    elModePill.innerHTML = `Mode: <b>View</b>`;
+    renderViewMode(months);
+    setValidationUI([], true);
+  }
+}
+
+/* =========================
+   CONTROLS
+   ========================= */
+document.getElementById("prev").addEventListener("click", ()=>{
   pageOffset--;
+  if(pageOffset < 0) pageOffset = 0;
   render();
 });
-document.getElementById("next").addEventListener("click", () => {
+document.getElementById("next").addEventListener("click", ()=>{
   pageOffset++;
+  const monthsShown = Number(elMonthsShown.value);
+  const maxOffset = Math.max(0, 12 - monthsShown);
+  if(pageOffset > maxOffset) pageOffset = maxOffset;
   render();
 });
-document.getElementById("today").addEventListener("click", () => {
-  const now = new Date();
+document.getElementById("thisMonth").addEventListener("click", ()=>{
+  const now=new Date();
   elStartMonth.value = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
-  pageOffset = 0;
+  pageOffset=0;
   render();
 });
 
-elEmployee.addEventListener("change", () => render());
-elCycleStart.addEventListener("change", () => render());
-elStartMonth.addEventListener("change", () => { pageOffset = 0; render(); });
-elMonthsShown.addEventListener("change", () => { pageOffset = 0; render(); });
+document.getElementById("swapModeBtn").addEventListener("click", ()=>{
+  swapMode = !swapMode;
+  document.getElementById("swapModeBtn").textContent = swapMode ? "Exit Swap Mode" : "Start Swap Mode";
+  pick = null;
+  render();
+});
 
-// init
-fillEmployees();
+document.getElementById("resetSwaps").addEventListener("click", ()=>{
+  resetSwapState();
+  render();
+});
+
+document.getElementById("exportJpg").addEventListener("click", async ()=>{
+  // Export is meaningful after swaps, but allow anytime
+  try{
+    await exportAsJpg();
+  } catch(e){
+    alert("Export JPG failed. Make sure form-template.jpg exists in your repo root.");
+  }
+});
+
+document.getElementById("exportPdf").addEventListener("click", async ()=>{
+  try{
+    await exportAsPdf();
+  } catch(e){
+    alert("Export PDF failed. Make sure form-template.jpg exists in your repo root.");
+  }
+});
+
+elCycleStart.addEventListener("change", ()=>render());
+elStartMonth.addEventListener("change", ()=>{ pageOffset=0; render(); });
+elMonthsShown.addEventListener("change", ()=>{ pageOffset=0; render(); });
+
+/* =========================
+   INIT
+   ========================= */
+buildSelectors();
 setDefaults();
 render();
 </script>
