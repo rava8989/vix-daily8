@@ -11,14 +11,14 @@
       --hdr:#0b0b0b;
       --hdr2:#151515;
 
-      --aBg:#1f1f1f; --aFg:#fff;     /* A = night */
-      --bBg:#ffffff; --bFg:#111;     /* B = day */
-      --cBg:#d9d9d9; --cFg:#111;     /* C = evening */
-      --rdoBg:#1f1f1f; --rdoFg:#fff; /* RDO */
-      --mdoBg:#bfbfbf; --mdoFg:#111; /* MDO */
-      --rBg:#ededed; --rFg:#111;     /* R */
-      --holBg:#ffe8ea; --holFg:#b10014; /* HOL */
-      --toBg:#e9f2ff; --toFg:#111;   /* COMP/PE/SICK/IOD/DIF */
+      --aBg:#1f1f1f; --aFg:#fff;         /* A */
+      --bBg:#ffffff; --bFg:#111;         /* B */
+      --cBg:#d9d9d9; --cFg:#111;         /* C */
+      --rdoBg:#1f1f1f; --rdoFg:#fff;     /* RDO */
+      --mdoBg:#bfbfbf; --mdoFg:#111;     /* MDO */
+      --rBg:#ededed; --rFg:#111;         /* R */
+      --holBg:#ffe8ea; --holFg:#b10014;  /* HOL */
+      --toBg:#e9f2ff; --toFg:#111;       /* COMP/PE/SICK/IOD/DIF */
 
       --sel:#0b57d0;
       --chg:#000;
@@ -26,14 +26,8 @@
     }
 
     *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family: Arial, Helvetica, sans-serif;
-      color:var(--ink);
-      background:#fff;
-    }
+    body{ margin:0; font-family: Arial, Helvetica, sans-serif; color:var(--ink); background:#fff; }
 
-    /* ===== Top bar (simple, no fancy UI) ===== */
     header{
       padding:10px 12px;
       border-bottom:3px solid var(--grid);
@@ -83,12 +77,12 @@
       font-size:12px;
       font-weight:900;
       background:#fff;
+      white-space:nowrap;
     }
     .pill.ok{ border-color:#1b5e20; color:#1b5e20; }
     .pill.bad{ border-color:var(--accent); color:var(--accent); }
     .pill.info{ border-color:#0b57d0; color:#0b57d0; }
 
-    /* ===== Schedule (closer to original paper) ===== */
     .paperWrap{
       border:2px solid var(--grid);
       border-radius:12px;
@@ -105,20 +99,10 @@
       gap:12px;
       flex-wrap:wrap;
     }
-    .paperTitle{
-      font-weight:900;
-      letter-spacing:.6px;
-    }
-    .paperMonth{
-      font-weight:900;
-      opacity:.95;
-      white-space:nowrap;
-    }
+    .paperTitle{ font-weight:900; letter-spacing:.6px; }
+    .paperMonth{ font-weight:900; opacity:.95; white-space:nowrap; }
 
-    .scrollX{
-      overflow:auto;
-      background:#fff;
-    }
+    .scrollX{ overflow:auto; background:#fff; }
 
     table.schedule{
       border-collapse:collapse;
@@ -133,37 +117,16 @@
       padding:0;
     }
 
-    /* Sticky left columns like printed schedule */
-    .sticky{
-      position:sticky;
-      left:0;
-      z-index:3;
-      background:#fff;
-    }
-    .sticky2{
-      position:sticky;
-      left:170px;
-      z-index:3;
-      background:#fff;
-    }
-    .sticky3{
-      position:sticky;
-      left:260px;
-      z-index:3;
-      background:#fff;
-    }
+    .sticky{ position:sticky; left:0; z-index:3; background:#fff; }
+    .sticky2{ position:sticky; left:170px; z-index:3; background:#fff; }
+    .sticky3{ position:sticky; left:260px; z-index:3; background:#fff; }
 
-    /* Left column sizes */
     .colName{ width:170px; min-width:170px; max-width:170px; }
     .colShift{ width:90px; min-width:90px; max-width:90px; }
     .colSlot{ width:70px; min-width:70px; max-width:70px; }
 
-    /* Header like original: black bar with white text */
-    thead th{
-      background:var(--hdr);
-      color:#fff;
-    }
-    .headName, .headShift, .headSlot{
+    thead th{ background:var(--hdr); color:#fff; }
+    .headName,.headShift,.headSlot{
       background:var(--hdr);
       color:#fff;
       font-size:12px;
@@ -171,23 +134,15 @@
       padding:6px 8px;
     }
     .dayNum{
-      width:44px;
-      min-width:44px;
-      max-width:44px;
-      height:28px;
-      font-size:12px;
+      width:44px; min-width:44px; max-width:44px;
+      height:28px; font-size:12px;
     }
     .dayDow{
-      width:44px;
-      min-width:44px;
-      max-width:44px;
-      height:22px;
-      font-size:11px;
-      opacity:.95;
-      background:var(--hdr2);
+      width:44px; min-width:44px; max-width:44px;
+      height:22px; font-size:11px;
+      opacity:.95; background:var(--hdr2);
     }
 
-    /* Row labels (ME / THEM) */
     .rowBand{
       background:#000;
       color:#fff;
@@ -197,40 +152,33 @@
       text-align:left;
     }
 
-    /* Data rows */
     tbody td{
       height:40px;
-      width:44px;
-      min-width:44px;
-      max-width:44px;
+      width:44px; min-width:44px; max-width:44px;
       position:relative;
       user-select:none;
+      cursor:pointer;
     }
-    tbody td .code{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      height:100%;
-      width:100%;
-      font-size:13px;
-      letter-spacing:.3px;
-    }
-
-    /* Paper-ish alternating row backgrounds */
     tbody tr.dataRow:nth-child(odd) td{ background:#f1f1f1; }
     tbody tr.dataRow:nth-child(even) td{ background:#e6e6e6; }
 
-    /* Name/shift/slot cells */
     .nameCell,.shiftCell,.slotCell{
       text-align:left;
       padding:6px 8px !important;
       background:#fff !important;
       z-index:4;
+      cursor:default;
     }
     .nameCell{ font-size:12px; }
     .shiftCell,.slotCell{ font-size:12px; text-align:center; }
 
-    /* Code color blocks (like schedule) */
+    .code{
+      display:flex; align-items:center; justify-content:center;
+      height:100%; width:100%;
+      font-size:13px; letter-spacing:.3px;
+      pointer-events:none;
+    }
+
     .A{ background:var(--aBg) !important; color:var(--aFg) !important; }
     .B{ background:var(--bBg) !important; color:var(--bFg) !important; }
     .C{ background:var(--cBg) !important; color:var(--cFg) !important; }
@@ -240,19 +188,11 @@
     .HOL{ background:var(--holBg) !important; color:var(--holFg) !important; }
     .COMP,.PE,.SICK,.IOD,.DIF{ background:var(--toBg) !important; color:var(--toFg) !important; }
 
-    /* Click selection / change marker */
-    td.pick{
-      outline:4px solid var(--sel);
-      outline-offset:-4px;
-      z-index:2;
-    }
-    td.changed::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      box-shadow: inset 0 0 0 3px var(--chg);
-      pointer-events:none;
-    }
+    /* doubles */
+    .AB,.BC{ background:#000 !important; color:#fff !important; }
+
+    td.pick{ outline:4px solid var(--sel); outline-offset:-4px; z-index:2; }
+    td.changed::after{ content:""; position:absolute; inset:0; box-shadow: inset 0 0 0 3px var(--chg); pointer-events:none; }
 
     .errors{
       margin-top:10px;
@@ -295,11 +235,20 @@
       </div>
     </div>
 
-    <div class="field" style="min-width:140px;">
-      <label>Swap Mode</label>
-      <select id="swapMode">
-        <option value="on" selected>ON</option>
-        <option value="off">OFF</option>
+    <div class="field" style="min-width:170px;">
+      <label>Mode</label>
+      <select id="mode">
+        <option value="swap" selected>Swap</option>
+        <option value="double">Add Double</option>
+        <option value="view">View</option>
+      </select>
+    </div>
+
+    <div class="field" style="min-width:170px;">
+      <label>Double Type</label>
+      <select id="doubleType">
+        <option value="AB">A/B</option>
+        <option value="BC">B/C</option>
       </select>
     </div>
   </div>
@@ -325,7 +274,7 @@
 
 <main>
   <div class="statusRow">
-    <span class="pill info" id="swapHint">Swap: click a day on ME, then click a day on THEM.</span>
+    <span class="pill info" id="hintPill">Swap: click a day on ME, then a day on THEM (must be same week Sun–Sat).</span>
     <span class="pill" id="baselinePill">BASELINE: NOT LOCKED</span>
     <span class="pill" id="validPill">VALIDATION: —</span>
   </div>
@@ -341,16 +290,20 @@
   <div class="errors" id="errors"></div>
 
   <div class="legend">
-Legend (Rotating Shift):
-A = night, B = day, C = evening
-RDO = regular day off, MDO = mutual day off, R = reserve (treated like B)
+Legend:
+A = night, B = day, C = evening, R = reserve (treated like B)
+RDO = regular day off, MDO = mutual day off
 HOL = holiday
 COMP = comp time, PE = personal excuse, SICK = sick leave, IOD = injury on duty, DIF = death in family
+A/B and B/C are doubles
 
-Rules enforced (basic):
-• Week = SUN → SAT
-• If a week has NO time-off codes (HOL/COMP/PE/SICK/IOD/DIF), it must have exactly 5 shifts (A/B/C/R) and 2 RDO
-• Swap is ME click + THEM click (any two days)
+Rules enforced:
+1) NO cross-week swaps. Any swap must stay inside the same week (Sunday–Saturday).
+2) “Fixed coverage days” cannot be moved to a different date:
+   • A, C, HOL, and weekend B (Sat/Sun) MUST be swapped same-date (ME day must equal THEM day).
+   (So coverage stays on that exact day; it only changes WHO works it.)
+3) Regular weekday B can move only inside the same week, but it cannot be moved onto Sat/Sun or onto a HOL day.
+4) Add Double: click a day for the person to mark it A/B or B/C; system will automatically convert one weekday RDO in that same week into MDO (required). If no weekday RDO exists in that week, it blocks the double.
   </div>
 </main>
 
@@ -379,11 +332,11 @@ const EMPLOYEES = [
 ];
 
 const TIME_OFF = new Set(["HOL","COMP","PE","SICK","IOD","DIF"]);
-const WORK = new Set(["A","B","C","R"]);
+const WORK = new Set(["A","B","C","R","AB","BC"]);
 
 const K_BASELINE = "pa_rot_baseline_42";
 const K_BASELINE_LOCKED = "pa_rot_baseline_locked";
-const K_SWAPS = "pa_rot_swaps";
+const K_SWAPS = "pa_rot_swaps_v2";
 
 const pad2 = (n)=>String(n).padStart(2,"0");
 const isoDate = (y,m,d)=>`${y}-${pad2(m)}-${pad2(d)}`;
@@ -393,8 +346,7 @@ const startOfDay = (iso)=>{ const d=new Date(iso+"T00:00:00"); d.setHours(0,0,0,
 const daysBetween = (aISO,bISO)=>Math.floor((startOfDay(bISO)-startOfDay(aISO))/(24*60*60*1000));
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-/* 6-week loop baseline (42 days).
-   This is the SLOT 1 template; other slots offset by 7 days each. */
+/* SLOT 1 default 42-day loop (edit later if needed) */
 const DEFAULT_BASELINE_42 = [
   "RDO","B","B","B","B","B","RDO",
   "RDO","A","A","A","A","A","RDO",
@@ -404,13 +356,10 @@ const DEFAULT_BASELINE_42 = [
   "RDO","C","C","C","C","C","RDO",
 ];
 
-/* Pick a real cycle anchor Sunday. */
 const CYCLE_START = "2026-01-04";
 const CYCLE_LEN = 42;
 
-function norm(code){
-  return (code ?? "").toString().trim().toUpperCase();
-}
+function norm(code){ return (code ?? "").toString().trim().toUpperCase(); }
 
 function loadBaseline(){
   const locked = localStorage.getItem(K_BASELINE_LOCKED) === "1";
@@ -442,18 +391,14 @@ function loadSwaps(){
     return {};
   }
 }
-function saveSwaps(obj){
-  localStorage.setItem(K_SWAPS, JSON.stringify(obj));
-}
-function resetSwaps(){
-  localStorage.removeItem(K_SWAPS);
-}
+function saveSwaps(obj){ localStorage.setItem(K_SWAPS, JSON.stringify(obj)); }
+function resetSwaps(){ localStorage.removeItem(K_SWAPS); }
 
 function codeFromBaseline(dateISO, slot, baseline42){
   const days = daysBetween(CYCLE_START, dateISO);
   const offset = (slot-1)*7;
   const idx = ((days+offset)%CYCLE_LEN + CYCLE_LEN) % CYCLE_LEN;
-  return baseline42[idx];
+  return norm(baseline42[idx]);
 }
 
 function buildBaseMap(personIdx, y, m, baseline42){
@@ -486,20 +431,30 @@ function clearOverride(swapsObj, personIdx, iso){
   if(swapsObj[key] && swapsObj[key][iso] != null) delete swapsObj[key][iso];
 }
 
-function weekKeyForISO(iso){
-  const dt = new Date(iso+"T00:00:00");
-  const dow = dt.getDay();
-  dt.setDate(dt.getDate()-dow);
-  dt.setHours(0,0,0,0);
-  return dt.toISOString().slice(0,10);
+function dowOfISO(iso){ return new Date(iso+"T00:00:00").getDay(); } // 0=Sun
+function isWeekendISO(iso){ const d=dowOfISO(iso); return d===0 || d===6; }
+function weekStartISO(iso){
+  const d = new Date(iso+"T00:00:00");
+  const dow = d.getDay();
+  d.setDate(d.getDate()-dow);
+  d.setHours(0,0,0,0);
+  return d.toISOString().slice(0,10);
 }
+function sameWeek(aISO,bISO){ return weekStartISO(aISO) === weekStartISO(bISO); }
+
+function codeClass(code){
+  const c = norm(code);
+  const ok = ["A","B","C","RDO","MDO","R","HOL","COMP","PE","SICK","IOD","DIF","AB","BC"];
+  return ok.includes(c) ? c : "";
+}
+
 function validateMonth(personIdx, y, m, reqMap){
   const errs = [];
   const dim = daysInMonth(y,m);
   const buckets = new Map();
   for(let d=1; d<=dim; d++){
     const iso = isoDate(y,m,d);
-    const wk = weekKeyForISO(iso);
+    const wk = weekStartISO(iso);
     const arr = buckets.get(wk) || [];
     arr.push(iso);
     buckets.set(wk, arr);
@@ -520,10 +475,27 @@ function validateMonth(personIdx, y, m, reqMap){
   return errs;
 }
 
-function codeClass(code){
+/* ===========================
+   RULE HELPERS
+   =========================== */
+function isFixedCoverage(code, iso){
   const c = norm(code);
-  const ok = ["A","B","C","RDO","MDO","R","HOL","COMP","PE","SICK","IOD","DIF"];
-  return ok.includes(c) ? c : "";
+  if(c==="A" || c==="C" || c==="HOL") return true;
+  if(c==="B" && isWeekendISO(iso)) return true; // weekend B fixed-date
+  return false;
+}
+function isRegularWeekdayB(code, iso){
+  return norm(code)==="B" && !isWeekendISO(iso);
+}
+function wouldMoveWeekdayBToInvalidDay(fromISO, toISO, fromCode, toTargetCode){
+  // When we move B to another day via swap: that other day must be weekday and not HOL
+  // We apply this as: if either resulting placement is weekday B but on weekend/HOL => block.
+  // We'll just block ANY swap that would place a B onto weekend OR onto a HOL day.
+  const fromIsB = norm(fromCode)==="B";
+  const toIsB = norm(toTargetCode)==="B";
+  if(fromIsB && (isWeekendISO(toISO))) return true;
+  if(toIsB && (isWeekendISO(fromISO))) return true;
+  return false;
 }
 
 /* ===========================
@@ -532,7 +504,8 @@ function codeClass(code){
 const elMonthPick = document.getElementById("monthPick");
 const elMe = document.getElementById("me");
 const elThem = document.getElementById("them");
-const elSwapMode = document.getElementById("swapMode");
+const elMode = document.getElementById("mode");
+const elDoubleType = document.getElementById("doubleType");
 
 const elTableHost = document.getElementById("tableHost");
 const elPaperMonthText = document.getElementById("paperMonthText");
@@ -540,7 +513,7 @@ const elErrors = document.getElementById("errors");
 
 const baselinePill = document.getElementById("baselinePill");
 const validPill = document.getElementById("validPill");
-const swapHint = document.getElementById("swapHint");
+const hintPill = document.getElementById("hintPill");
 
 let pick = null; // { side:"me"|"them", iso }
 
@@ -566,6 +539,12 @@ function render(){
   const [y,m] = elMonthPick.value.split("-").map(Number);
   elPaperMonthText.textContent = monthLabel(y,m);
 
+  const mode = elMode.value;
+  hintPill.textContent =
+    mode==="swap"   ? "Swap: click a day on ME, then a day on THEM (same week Sun–Sat; fixed coverage days require same-date swap)."
+  : mode==="double" ? "Double: click a day on ME or THEM to mark it A/B or B/C; app auto-creates one MDO (weekday) in that same week."
+  : "View: no actions.";
+
   const baseObj = loadBaseline();
   baselinePill.textContent = `BASELINE: ${baseObj.locked ? "LOCKED" : "NOT LOCKED"}`;
   baselinePill.className = "pill " + (baseObj.locked ? "ok" : "bad");
@@ -582,7 +561,6 @@ function render(){
 
   const dim = daysInMonth(y,m);
 
-  // Validation
   const errs = [
     ...validateMonth(meIdx, y, m, reqMe),
     ...validateMonth(thIdx, y, m, reqTh),
@@ -599,11 +577,6 @@ function render(){
     elErrors.textContent = errs.map(e=>"• "+e).join("\n");
   }
 
-  swapHint.textContent = (elSwapMode.value==="on")
-    ? "Swap: click a day on ME, then click a day on THEM."
-    : "Swap is OFF (turn Swap Mode ON to swap).";
-
-  // Build schedule table (single month, full row of days)
   let html = `<table class="schedule" aria-label="Rotating shift schedule">
     <thead>
       <tr>
@@ -614,21 +587,16 @@ function render(){
       </tr>
       <tr>
         ${Array.from({length:dim}, (_,i)=>{
-          const d = i+1;
+          const d=i+1;
           const dow = new Date(y,m-1,d).getDay();
           return `<th class="dayDow">${DOW[dow]}</th>`;
         }).join("")}
       </tr>
     </thead>
-
     <tbody>
-      <tr>
-        <td class="rowBand sticky colName" colspan="${3+dim}">ME</td>
-      </tr>
+      <tr><td class="rowBand sticky colName" colspan="${3+dim}">ME</td></tr>
       ${renderPersonRow("me", meIdx, y, m, dim, baseMe, reqMe)}
-      <tr>
-        <td class="rowBand sticky colName" colspan="${3+dim}">THEM</td>
-      </tr>
+      <tr><td class="rowBand sticky colName" colspan="${3+dim}">THEM</td></tr>
       ${renderPersonRow("them", thIdx, y, m, dim, baseTh, reqTh)}
     </tbody>
   </table>`;
@@ -643,30 +611,60 @@ function renderPersonRow(side, personIdx, y, m, dim, baseMap, reqMap){
     <td class="shiftCell sticky2 colShift">${p.shift || ""}</td>
     <td class="slotCell sticky3 colSlot">${p.slot}</td>
   `;
-
   for(let d=1; d<=dim; d++){
     const iso = isoDate(y,m,d);
     const code = norm(reqMap.get(iso));
     const base = norm(baseMap.get(iso));
-
     const picked = (pick && pick.side===side && pick.iso===iso) ? "pick" : "";
     const changed = (code !== base) ? "changed" : "";
-
     row += `<td class="${picked} ${changed}" data-side="${side}" data-iso="${iso}">
       <div class="code ${codeClass(code)}">${code}</div>
     </td>`;
   }
-
   row += `</tr>`;
   return row;
 }
 
 /* ===========================
-   SWAP
+   SWAP LOGIC (with rules)
    =========================== */
-function doSwap(isoMe, isoThem){
-  const [y,m] = elMonthPick.value.split("-").map(Number);
+function ruleCheckSwapOrThrow(ctx){
+  // ctx: { isoMe, isoTh, meCode, thCode, y, m, baseMe, baseTh, reqMe, reqTh }
+  const { isoMe, isoTh, meCode, thCode, reqMe, reqTh } = ctx;
 
+  // Rule 1: same week only
+  if(!sameWeek(isoMe, isoTh)){
+    throw new Error("NO CROSS-WEEK swaps. Both selections must be inside the same week (Sun–Sat).");
+  }
+
+  // Identify if either side is fixed coverage on their selected date
+  const meFixed = isFixedCoverage(meCode, isoMe);
+  const thFixed = isFixedCoverage(thCode, isoTh);
+
+  // Rule 2: fixed coverage days require SAME DATE swap (date-locked)
+  if((meFixed || thFixed) && (isoMe !== isoTh)){
+    throw new Error("Fixed coverage days (A, C, HOL, weekend B) MUST be swapped same-date (ME day must equal THEM day).");
+  }
+
+  // Rule 3: regular weekday B cannot be moved to weekend or HOL day.
+  // We enforce this on the RESULT of swap:
+  // After swap, ME@isoMe becomes thCode, THEM@isoTh becomes meCode.
+  const meAfter = thCode;
+  const thAfter = meCode;
+
+  // Disallow placing a B onto weekend
+  if(norm(meAfter)==="B" && isWeekendISO(isoMe)) throw new Error("You cannot move a regular B onto a weekend day (Sat/Sun).");
+  if(norm(thAfter)==="B" && isWeekendISO(isoTh)) throw new Error("You cannot move a regular B onto a weekend day (Sat/Sun).");
+
+  // Disallow creating weekday-B on a HOL day (treat HOL as date-locked)
+  // If destination is HOL, you shouldn't be turning it into B via cross-date move.
+  // Same-date swap of HOL is allowed (HOL stays on that date but changes who has it).
+  if(norm(reqMe.get(isoMe))==="HOL" && norm(meAfter)==="B" && isoMe!==isoTh) throw new Error("B cannot be moved onto a HOL day.");
+  if(norm(reqTh.get(isoTh))==="HOL" && norm(thAfter)==="B" && isoMe!==isoTh) throw new Error("B cannot be moved onto a HOL day.");
+}
+
+function doSwap(isoMe, isoTh){
+  const [y,m] = elMonthPick.value.split("-").map(Number);
   const meIdx = Number(elMe.value);
   const thIdx = Number(elThem.value);
 
@@ -678,23 +676,103 @@ function doSwap(isoMe, isoThem){
   const reqMe = applyOverrides(meIdx, baseMe, swapsObj);
   const reqTh = applyOverrides(thIdx, baseTh, swapsObj);
 
-  const a = norm(reqMe.get(isoMe));
-  const b = norm(reqTh.get(isoThem));
+  const meCode = norm(reqMe.get(isoMe));
+  const thCode = norm(reqTh.get(isoTh));
 
-  // swap codes between those 2 cells
-  setOverride(swapsObj, meIdx, isoMe, b);
-  setOverride(swapsObj, thIdx, isoThem, a);
+  ruleCheckSwapOrThrow({ isoMe, isoTh, meCode, thCode, y, m, baseMe, baseTh, reqMe, reqTh });
 
-  // clean overrides if same as baseline
-  if(norm(b) === norm(baseMe.get(isoMe))) clearOverride(swapsObj, meIdx, isoMe);
-  if(norm(a) === norm(baseTh.get(isoThem))) clearOverride(swapsObj, thIdx, isoThem);
+  // Swap
+  setOverride(swapsObj, meIdx, isoMe, thCode);
+  setOverride(swapsObj, thIdx, isoTh, meCode);
+
+  // Clean if equals baseline
+  if(norm(thCode) === norm(baseMe.get(isoMe))) clearOverride(swapsObj, meIdx, isoMe);
+  if(norm(meCode) === norm(baseTh.get(isoTh))) clearOverride(swapsObj, thIdx, isoTh);
 
   saveSwaps(swapsObj);
 }
 
 /* ===========================
-   FORM PRINT (simple placeholder)
-   NOTE: Generates a printable form in a new window.
+   DOUBLE LOGIC
+   =========================== */
+function addDouble(side, iso){
+  const [y,m] = elMonthPick.value.split("-").map(Number);
+  const personIdx = side==="me" ? Number(elMe.value) : Number(elThem.value);
+
+  const baseObj = loadBaseline();
+  const swapsObj = loadSwaps();
+
+  const baseMap = buildBaseMap(personIdx, y, m, baseObj.arr);
+  const reqMap = applyOverrides(personIdx, baseMap, swapsObj);
+
+  const cur = norm(reqMap.get(iso));
+  if(TIME_OFF.has(cur) || cur==="HOL"){
+    throw new Error("Cannot add a double on HOL or time-off days.");
+  }
+  if(cur==="RDO" || cur==="MDO"){
+    throw new Error("Cannot add a double on an RDO/MDO day. Pick a working day.");
+  }
+  if(cur==="AB" || cur==="BC"){
+    throw new Error("That day is already a double.");
+  }
+
+  const dbl = elDoubleType.value; // "AB" or "BC"
+  // Only allow AB if baseline-like day is A or B; allow BC if B or C.
+  if(dbl==="AB" && !(cur==="A" || cur==="B" || cur==="R")){
+    throw new Error("A/B double is only valid on an A or B (or R) day.");
+  }
+  if(dbl==="BC" && !(cur==="B" || cur==="C" || cur==="R")){
+    throw new Error("B/C double is only valid on a B or C (or R) day.");
+  }
+
+  // Set the double code on selected day
+  setOverride(swapsObj, personIdx, iso, dbl);
+
+  // Required: create 1 MDO for that week (prefer converting a WEEKDAY RDO to MDO)
+  const wkStart = weekStartISO(iso);
+  const wkStartDate = new Date(wkStart+"T00:00:00");
+
+  // Get all 7 isos for week
+  const weekIsos = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(wkStartDate);
+    d.setDate(d.getDate()+i);
+    const wiso = d.toISOString().slice(0,10);
+    // Only apply if same month (this UI is single month). If week spills, still allow IF that date exists in this month map.
+    if(reqMap.has(wiso)) weekIsos.push(wiso);
+  }
+
+  // Find weekday RDO candidate (Mon–Fri)
+  let mdoTarget = null;
+  for(const wiso of weekIsos){
+    const dow = dowOfISO(wiso);
+    if(dow===0 || dow===6) continue; // skip weekend
+    const c = norm(applyOverrides(personIdx, baseMap, swapsObj).get(wiso));
+    if(c==="RDO"){
+      mdoTarget = wiso;
+      break;
+    }
+  }
+  if(!mdoTarget){
+    // rollback double
+    clearOverride(swapsObj, personIdx, iso);
+    throw new Error("Double requires an MDO that week, but there is no weekday RDO available to convert into MDO.");
+  }
+
+  setOverride(swapsObj, personIdx, mdoTarget, "MDO");
+
+  // Clean overrides if equal baseline
+  const baseDouble = norm(baseMap.get(iso));
+  if(norm(dbl) === baseDouble) clearOverride(swapsObj, personIdx, iso);
+
+  const baseMDO = norm(baseMap.get(mdoTarget));
+  if("MDO" === baseMDO) clearOverride(swapsObj, personIdx, mdoTarget);
+
+  saveSwaps(swapsObj);
+}
+
+/* ===========================
+   PRINT FORM (basic)
    =========================== */
 function openFormPrint(){
   const [y,m] = elMonthPick.value.split("-").map(Number);
@@ -812,29 +890,25 @@ document.getElementById("prev").addEventListener("click", ()=>{
   const [y,m] = elMonthPick.value.split("-").map(Number);
   const dt = new Date(y, m-2, 1);
   elMonthPick.value = `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}`;
-  pick=null;
-  render();
+  pick=null; render();
 });
 document.getElementById("next").addEventListener("click", ()=>{
   const [y,m] = elMonthPick.value.split("-").map(Number);
   const dt = new Date(y, m, 1);
   elMonthPick.value = `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}`;
-  pick=null;
-  render();
+  pick=null; render();
 });
 document.getElementById("thisMonth").addEventListener("click", ()=>{
   const now = new Date();
   elMonthPick.value = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
-  pick=null;
-  render();
+  pick=null; render();
 });
 
 document.getElementById("resetSwaps").addEventListener("click", ()=>{ resetSwaps(); pick=null; render(); });
 document.getElementById("lockBaseline").addEventListener("click", ()=>{
   const b = loadBaseline().arr;
   saveBaseline(b);
-  pick=null;
-  render();
+  pick=null; render();
 });
 document.getElementById("resetBaseline").addEventListener("click", ()=>{ resetBaseline(); pick=null; render(); });
 document.getElementById("generateForm").addEventListener("click", ()=>{ openFormPrint(); });
@@ -842,35 +916,57 @@ document.getElementById("generateForm").addEventListener("click", ()=>{ openForm
 elMonthPick.addEventListener("change", ()=>{ pick=null; render(); });
 elMe.addEventListener("change", ()=>{ pick=null; render(); });
 elThem.addEventListener("change", ()=>{ pick=null; render(); });
-elSwapMode.addEventListener("change", ()=>{ pick=null; render(); });
+elMode.addEventListener("change", ()=>{ pick=null; render(); });
+elDoubleType.addEventListener("change", ()=>{ /* no-op */ });
 
 document.addEventListener("click", (e)=>{
   const td = e.target.closest("td[data-side][data-iso]");
   if(!td) return;
-  if(elSwapMode.value !== "on") return;
 
   const side = td.getAttribute("data-side");
   const iso = td.getAttribute("data-iso");
+  const mode = elMode.value;
 
+  if(mode === "view") return;
+
+  // Double mode: one-click action
+  if(mode === "double"){
+    try{
+      addDouble(side, iso);
+      pick=null;
+      render();
+    }catch(err){
+      document.getElementById("errors").style.display="block";
+      document.getElementById("errors").textContent = "• " + (err?.message || String(err));
+    }
+    return;
+  }
+
+  // Swap mode: pick ME then THEM
   if(!pick){
     pick = { side, iso };
     render();
     return;
   }
-  // clicking same side replaces selection
   if(pick.side === side){
     pick = { side, iso };
     render();
     return;
   }
 
-  // swap between the 2 selected cells
   const isoMe = (pick.side==="me") ? pick.iso : iso;
   const isoTh = (pick.side==="them") ? pick.iso : iso;
 
-  doSwap(isoMe, isoTh);
-  pick = null;
-  render();
+  try{
+    doSwap(isoMe, isoTh);
+    pick=null;
+    render();
+  }catch(err){
+    pick=null;
+    render();
+    document.getElementById("errors").style.display="block";
+    document.getElementById("errors").textContent = "• " + (err?.message || String(err));
+  }
 });
 
 /* ===========================
