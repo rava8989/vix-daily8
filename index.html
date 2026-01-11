@@ -9,12 +9,12 @@
       --bg:#ffffff;
       --ink:#111;
       --muted:#666;
-      --grid:#1a1a1a;
+      --grid:#111;
       --hdr:#0b0b0b;
-      --hdr2:#151515;
 
       --cell:#f3f3f3;
       --cell2:#eaeaea;
+
       --wknd:#0b0b0b;
       --wkndInk:#fff;
 
@@ -28,14 +28,8 @@
       --mdo:#bfbfbf;
       --mdoInk:#111;
 
-      --hol:#ffffff;
-      --holInk:#b30000;
-
       --warn:#b30000;
       --ok:#0a7a00;
-
-      --accent:#1a1a1a;
-      --accent2:#b30000;
 
       --pick:#ffe08a;
       --swap:#98d7ff;
@@ -43,10 +37,11 @@
       --shadow: 0 2px 10px rgba(0,0,0,.08);
       --radius: 10px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
 
     html,body{background:var(--bg); color:var(--ink); margin:0; font-family:var(--sans);}
+
     .topbar{
       position:sticky; top:0; z-index:50;
       background:var(--bg); border-bottom:2px solid var(--grid);
@@ -58,13 +53,14 @@
       display:flex; flex-direction:column; gap:4px;
       font-size:12px; color:var(--muted);
     }
-    .ctl input,.ctl select{
+    .ctl select{
       font-size:14px; padding:8px 10px;
       border:2px solid var(--grid); border-radius:8px;
       background:#fff; color:var(--ink);
       min-width:160px;
     }
     .monthRow{display:flex; gap:8px;}
+
     button{
       font-size:14px;
       padding:10px 12px;
@@ -73,23 +69,20 @@
       border-radius:999px;
       cursor:pointer;
     }
-    button.primary{
-      background:var(--hdr);
-      color:#fff;
-    }
-    button.danger{
-      background:var(--accent2);
-      color:#fff;
-      border-color:var(--accent2);
-    }
+    button.primary{ background:var(--hdr); color:#fff; }
+    button.danger{ background:var(--warn); color:#fff; border-color:var(--warn); }
     button:disabled{opacity:.55; cursor:not-allowed;}
+
     .pill{
       font-size:12px; padding:6px 10px;
       border:2px solid var(--grid); border-radius:999px;
       background:#fff;
+      white-space:nowrap;
+      font-family:var(--mono);
     }
     .pill.ok{border-color:var(--ok); color:var(--ok);}
     .pill.bad{border-color:var(--warn); color:var(--warn);}
+
     .legend{
       margin-top:10px;
       display:flex; flex-wrap:wrap; gap:10px;
@@ -99,6 +92,7 @@
       border:2px solid var(--grid); border-radius:999px;
       padding:4px 10px; display:flex; align-items:center; gap:8px;
       background:#fff;
+      font-family:var(--mono);
     }
     .sw{width:16px; height:12px; border:2px solid var(--grid); border-radius:4px;}
     .sw.a{background:var(--a);}
@@ -106,7 +100,6 @@
     .sw.c{background:var(--c);}
     .sw.rdo{background:var(--rdo);}
     .sw.mdo{background:var(--mdo);}
-    .sw.hol{background:var(--hol);}
     .sw.pick{background:var(--pick);}
     .sw.swap{background:var(--swap);}
 
@@ -119,16 +112,25 @@
       background:#fff;
       margin-bottom:12px;
     }
-
     .monthHeader{
       display:flex; align-items:center; justify-content:space-between;
       padding:10px 12px;
-      background:linear-gradient(0deg, var(--hdr), var(--hdr2));
+      background:var(--hdr);
       color:#fff;
-      font-weight:700;
+      font-weight:900;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+      font-size:14px;
     }
-    .monthHeader small{opacity:.85; font-weight:600;}
+    .monthHeader small{
+      opacity:.85;
+      font-weight:700;
+      text-transform:none;
+      letter-spacing:0;
+      font-size:12px;
+    }
     .scrollX{overflow:auto;}
+
     table{
       border-collapse:collapse;
       width:max-content;
@@ -137,46 +139,24 @@
       font-family:var(--mono);
       font-size:12px;
     }
-    th,td{
-      border:1px solid var(--grid);
-      padding:0;
-      text-align:center;
-      vertical-align:middle;
-    }
+    th,td{ border:1px solid var(--grid); padding:0; text-align:center; vertical-align:middle; }
 
     th.stickyLeft, td.stickyLeft{
-      position:sticky; left:0; z-index:5;
-      background:#fff;
+      position:sticky; left:0; z-index:5; background:#fff;
     }
     th.stickyLeft2, td.stickyLeft2{
-      position:sticky; left:240px; z-index:5;
-      background:#fff;
+      position:sticky; left:240px; z-index:5; background:#fff;
     }
 
     .colName{width:240px; min-width:240px; max-width:240px;}
     .colSlot{width:80px; min-width:80px; max-width:80px;}
     .colDay{width:36px; min-width:36px; max-width:36px;}
 
-    thead th{background:#fff; font-weight:800;}
-    thead .band{
-      background:var(--hdr);
-      color:#fff;
-      font-weight:900;
-      text-transform:uppercase;
-      letter-spacing:.5px;
-    }
-    thead .dayTop{
-      background:var(--hdr);
-      color:#fff;
-      font-weight:900;
-      font-size:12px;
-    }
-    thead .dow{
-      background:#111;
-      color:#fff;
-      font-weight:800;
-      font-size:11px;
-    }
+    thead th{background:#fff; font-weight:900;}
+    thead .band{ background:var(--hdr); color:#fff; text-transform:uppercase; letter-spacing:.5px; }
+    thead .dayTop{ background:var(--hdr); color:#fff; font-weight:900; }
+    thead .dow{ background:#111; color:#fff; font-weight:800; font-size:11px; }
+    thead .cov{ background:#fff; color:#111; font-weight:900; font-size:11px; }
 
     tbody tr.personRow td{background:var(--cell);}
     tbody tr.personRow:nth-child(2n) td{background:var(--cell2);}
@@ -187,6 +167,7 @@
       font-weight:900;
       height:28px;
       line-height:28px;
+      white-space:nowrap;
     }
 
     td.code[data-code="A"]{background:var(--a);}
@@ -195,30 +176,24 @@
     td.code[data-code="R"]{background:#e7e7e7;}
     td.code[data-code="RDO"]{background:var(--rdo); color:var(--rdoInk);}
     td.code[data-code="MDO"]{background:var(--mdo); color:var(--mdoInk);}
-    td.code[data-code="HOL"]{background:var(--hol); color:var(--holInk); font-weight:1000;}
-    td.code[data-code="COMP"],
-    td.code[data-code="PE"],
-    td.code[data-code="SICK"],
-    td.code[data-code="IOD"],
-    td.code[data-code="DIF"]{
-      background:#fff; color:#b30000; font-weight:1000;
+
+    td.code[data-code*="/"]{
+      background:#fff;
+      font-weight:1000;
+      box-shadow: inset 0 0 0 2px #000;
     }
 
     td.code.wknd{background:var(--wknd) !important; color:var(--wkndInk) !important;}
-    td.code.wknd[data-code="HOL"]{color:#ff9a9a !important;}
-
     td.code.pick{outline:3px solid #000; background:var(--pick) !important; color:#000 !important;}
     td.code.swapTarget{outline:3px solid #000; background:var(--swap) !important; color:#000 !important;}
     td.code.changed{box-shadow: inset 0 0 0 3px #b30000;}
-    td.code.invalid{box-shadow: inset 0 0 0 3px var(--warn);}
-    td.code.valid{box-shadow: inset 0 0 0 3px var(--ok);}
 
     .nameCell{
       padding:6px 10px;
       text-align:left;
       font-family:var(--sans);
       font-size:13px;
-      font-weight:800;
+      font-weight:900;
       white-space:nowrap;
     }
     .slotCell{
@@ -230,7 +205,7 @@
       white-space:nowrap;
     }
 
-    .groupDivider td{
+    .divider td{
       background:#fff;
       border-top:4px solid #000;
       height:4px;
@@ -247,11 +222,8 @@
       font-size:12px;
       color:#111;
       line-height:1.35;
+      font-family:var(--mono);
     }
-    .help b{font-weight:900;}
-    .help .note{color:var(--muted)}
-    .help .bad{color:var(--warn); font-weight:900;}
-    .help .ok{color:var(--ok); font-weight:900;}
   </style>
 </head>
 <body>
@@ -278,7 +250,7 @@
         <select id="mode">
           <option value="view">View</option>
           <option value="swap">Swap</option>
-          <option value="double">Double (A/B or B/C → auto MDO)</option>
+          <option value="double">Double (ME only → choose MDO)</option>
         </select>
       </div>
 
@@ -297,28 +269,24 @@
         <select id="themSel"></select>
       </div>
 
-      <button id="resetSwapsBtn">Reset Swaps</button>
+      <button id="resetBtn">Reset Changes</button>
       <button class="primary" id="genFormBtn">Generate Form (Print)</button>
     </div>
 
     <div class="row" style="margin-top:10px">
       <span class="pill" id="statusMode">MODE: VIEW</span>
       <span class="pill" id="statusPick">PICK: —</span>
-      <span class="pill" id="statusValidation">VALIDATION: —</span>
-
+      <span class="pill" id="statusInfo">INFO: —</span>
       <div class="spacer"></div>
-
-      <button class="danger" id="lockBaselineBtn">Lock Baseline (prevents non-week swaps)</button>
-      <button id="unlockBaselineBtn">Unlock Baseline</button>
+      <span class="pill" id="statusCoverage">COVERAGE: —</span>
     </div>
 
     <div class="legend">
-      <span class="chip"><span class="sw b"></span> B day</span>
-      <span class="chip"><span class="sw a"></span> A night</span>
-      <span class="chip"><span class="sw c"></span> C evening</span>
+      <span class="chip"><span class="sw b"></span> B</span>
+      <span class="chip"><span class="sw a"></span> A</span>
+      <span class="chip"><span class="sw c"></span> C</span>
       <span class="chip"><span class="sw rdo"></span> RDO</span>
       <span class="chip"><span class="sw mdo"></span> MDO</span>
-      <span class="chip"><span class="sw hol"></span> HOL</span>
       <span class="chip"><span class="sw pick"></span> picked</span>
       <span class="chip"><span class="sw swap"></span> swap target</span>
     </div>
@@ -328,28 +296,30 @@
 
   <div class="wrap">
     <div class="help">
-      <b>How to use swap:</b>
-      1) Set <b>Mode = Swap</b>
-      2) Pick <b>ME</b> + <b>SWAP WITH</b>
-      3) Click a day cell on <b>ME row</b>, then click a day cell on <b>THEM row</b><br/><br/>
-      <b>Note:</b> If you still see code printed on screen, you are not serving this as <b>index.html</b>.
+      SWAP: click a ME cell then a THEM cell (must be same Sun–Sat week).<br/>
+      DOUBLE: click a ME weekday cell to create A/B or B/C (or C/A / A/C already in baseline), then click a ME weekday cell in the SAME week to place MDO.
     </div>
   </div>
 
 <script>
+  // ======================
+  // Baseline 6-week loop
+  // ======================
+  const ANCHOR_DATE_ISO = "2026-01-01"; // Day #1 of the loop (index 0)
+  const LOOP_LEN = 42;
+
   const SLOT_TEMPLATES = {
-    1: ["RDO","B","B","B","B","B","RDO","RDO","B","B","B","B","B","RDO","RDO","C","C","C","C","C","RDO","RDO","A","A","A","A","A","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO"],
-    2: ["B","B","B","B","B","RDO","RDO","C","C","C","C","C","RDO","RDO","A","A","A","A","A","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","B","B","B","B","B","RDO","RDO"],
-    3: ["RDO","B","B","B","B","RDO","RDO","RDO","R","R","R","R","RDO","RDO","RDO","C","C","C","C","RDO","RDO","RDO","A","A","A","A","RDO","RDO","RDO","B","B","B","B","RDO","RDO","RDO","C","C","C","C","RDO","RDO"],
-    4: ["RDO","R","R","R","R","RDO","RDO","RDO","C","C","C","C","RDO","RDO","RDO","B","B","B","B","RDO","RDO","RDO","A","A","A","A","RDO","RDO","RDO","R","R","R","R","RDO","RDO","RDO","B","B","B","B","RDO","RDO"],
-    5: ["RDO","C","C","C","C","C","RDO","RDO","B","B","B","B","B","RDO","RDO","A","A","A","A","A","RDO","RDO","R","R","R","R","RDO","RDO","RDO","C","C","C","C","C","RDO","RDO","B","B","B","B","B","RDO"],
-    6: ["C","C","C","C","C","RDO","RDO","B","B","B","B","B","RDO","RDO","A","A","A","A","A","RDO","RDO","R","R","R","R","R","RDO","RDO","C","C","C","C","C","RDO","RDO","B","B","B","B","B","RDO","RDO"],
+    1: ["R","R","RDO","RDO","RDO","MDO","C","C/A","C","C","C","C","RDO","RDO","B","B","B","B","B","B","RDO","RDO","A","A","A","A","A/C","A","MDO","RDO","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R"],
+    2: ["C/A","C","C","C","C","RDO","RDO","B","B","B","B","B","B","RDO","RDO","A","A","A","A","A/C","A","MDO","RDO","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","RDO","MDO","C"],
+    3: ["B","B","B","B","B","B","RDO","RDO","A","A","A","A","A/C","A","MDO","RDO","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","RDO","MDO","C","C/A","C","C","C","C","RDO","RDO"],
+    4: ["RDO","A","A","A","A","A/C","A","MDO","RDO","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","RDO","MDO","C","C/A","C","C","C","C","RDO","RDO","B","B","B","B","B","B","RDO"],
+    5: ["MDO","RDO","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","RDO","MDO","C","C/A","C","C","C","C","RDO","RDO","B","B","B","B","B","B","RDO","RDO","A","A","A","A","A/C","A"],
+    6: ["B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","RDO","MDO","C","C/A","C","C","C","C","RDO","RDO","B","B","B","B","B","B","RDO","RDO","A","A","A","A","A/C","A","MDO","RDO","RDO","RDO","B","B","B"]
   };
 
-  const TEMPLATE_ANCHOR_ISO = "2026-02-01"; // must be a Sunday
-
-  const HOLIDAYS = new Set(["2026-01-01","2026-01-19","2026-02-16"]);
-
+  // ======================
+  // Employees (edit names if needed)
+  // ======================
   const EMPLOYEES = [
     { name:"Kingston, Joseph C.", slot:1 },
     { name:"Rodriguez, Roger", slot:1 },
@@ -365,10 +335,22 @@
     { name:"Svenjak, Mark", slot:6 },
   ];
 
-  const LS_KEY = "rotShiftSwapTool_v2";
+  // Treat "R" as a B tour for coverage counting (as you told me).
+  function normalizeForCoverage(token){
+    if(token === "R") return "B";
+    return token;
+  }
+
+  // ======================
+  // Persistence
+  // ======================
+  const LS_KEY = "rotShiftSwapTool_final_v1";
   function loadState(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"null"); }catch(e){ return null; } }
   function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 
+  // ======================
+  // Date utils
+  // ======================
   function pad2(n){ return String(n).padStart(2,"0"); }
   function isoDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
   function isoMonth(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`; }
@@ -384,14 +366,18 @@
     return isoDate(ws);
   }
   function sameWeek(a,b){ return weekStartSundayISO(a)===weekStartSundayISO(b); }
+
+  // ======================
+  // Core schedule
+  // ======================
   function getEmp(name){ return EMPLOYEES.find(e=>e.name===name)||null; }
 
-  function getTemplateIndex(iso){
-    const a=parseISODate(TEMPLATE_ANCHOR_ISO);
+  function loopIndex(iso){
+    const a=parseISODate(ANCHOR_DATE_ISO);
     const d=parseISODate(iso);
     const ms=24*60*60*1000;
     const diff=Math.floor((d-a)/ms);
-    return ((diff%42)+42)%42;
+    return ((diff%LOOP_LEN)+LOOP_LEN)%LOOP_LEN;
   }
 
   const state = loadState() || {
@@ -400,68 +386,76 @@
     mode: "view",
     me: EMPLOYEES[0]?.name || "",
     them: EMPLOYEES[1]?.name || "",
-    baselineLocked: false,
+    // overrides: { [personName]: { [isoDate]: "CODE" } }
     overrides: {},
-    changeLog: [],
-    doubleMDOChoice: {},
+    // double flow: after creating a double, you must pick MDO in same week
+    pendingMDO: null, // { weekStartISO: "...", person: "..." }
   };
 
-  let pick=null;
+  function getOverride(person, iso){ return state.overrides?.[person]?.[iso] ?? null; }
+  function setOverride(person, iso, code){
+    if(!state.overrides[person]) state.overrides[person] = {};
+    state.overrides[person][iso] = code;
+  }
+  function delOverride(person, iso){
+    if(state.overrides?.[person]) delete state.overrides[person][iso];
+  }
 
   function baseCode(person, iso){
     const emp=getEmp(person);
     if(!emp) return "";
     const arr=SLOT_TEMPLATES[emp.slot];
-    if(!arr) return "";
-    return arr[getTemplateIndex(iso)] || "";
-  }
-  function getOverride(person, iso){ return state.overrides?.[person]?.[iso] ?? null; }
-  function setOverride(person, iso, code){
-    if(!state.overrides[person]) state.overrides[person]={};
-    state.overrides[person][iso]=code;
+    if(!arr || arr.length!==LOOP_LEN) return "";
+    return arr[loopIndex(iso)] || "";
   }
 
-  function displayCode(person, iso){
-    const ov=getOverride(person, iso);
-    const code=ov ?? baseCode(person, iso);
-    if(["COMP","PE","SICK","IOD","DIF"].includes(code)) return code;
-    if(HOLIDAYS.has(iso)) return "HOL";
-    return code;
+  function codeFor(person, iso){
+    return getOverride(person, iso) ?? baseCode(person, iso);
   }
 
-  function isOff(code){ return ["RDO","MDO","COMP","PE","SICK","IOD","DIF","HOL"].includes(code); }
+  // ======================
+  // Coverage counting
+  // ======================
+  function countTokens(code){
+    // returns {A,B,C} counts contributed by this cell
+    const out = {A:0, B:0, C:0};
+    if(!code) return out;
+    if(code==="RDO" || code==="MDO") return out;
 
-  function validateSwap(me, them, isoMe, isoThem){
-    const errors=[];
-    if(!me||!them) errors.push("Pick ME and SWAP WITH.");
-    if(me===them) errors.push("ME and SWAP WITH must be different.");
-    if(!sameWeek(isoMe, isoThem)) errors.push("Cannot cross weeks (Sun–Sat).");
-    if(errors.length) return {ok:false, errors};
+    const parts = code.split("/").map(s=>s.trim()).filter(Boolean);
+    if(parts.length===0) return out;
 
-    const dMe=parseISODate(isoMe);
-    const dThem=parseISODate(isoThem);
-
-    const meCode=displayCode(me, isoMe);
-    const themCode=displayCode(them, isoThem);
-
-    // Block OFF<->OFF swap on weekend/holiday (would leave coverage nonsense)
-    if((isWeekend(dMe)||HOLIDAYS.has(isoMe)) && isOff(meCode) && isOff(themCode)) errors.push("Invalid: off ↔ off on weekend/holiday.");
-    if((isWeekend(dThem)||HOLIDAYS.has(isoThem)) && isOff(meCode) && isOff(themCode)) errors.push("Invalid: off ↔ off on weekend/holiday.");
-
-    return {ok: errors.length===0, errors};
+    for(let p of parts){
+      p = normalizeForCoverage(p);
+      if(p==="A") out.A += 1;
+      else if(p==="B") out.B += 1;
+      else if(p==="C") out.C += 1;
+      // ignore unknowns
+    }
+    return out;
   }
 
-  function doSwap(me, them, isoMe, isoThem){
-    const v=validateSwap(me, them, isoMe, isoThem);
-    if(!v.ok) return v;
-    const a=displayCode(me, isoMe);
-    const b=displayCode(them, isoThem);
-    setOverride(me, isoMe, b);
-    setOverride(them, isoThem, a);
-    saveState();
-    return {ok:true, errors:[]};
+  function dayCoverage(iso){
+    const total = {A:0, B:0, C:0};
+    for(const emp of EMPLOYEES){
+      const c = codeFor(emp.name, iso);
+      const add = countTokens(c);
+      total.A += add.A;
+      total.B += add.B;
+      total.C += add.C;
+    }
+    return total;
   }
 
+  function coverageOk(cov){
+    // per your staffing statement:
+    // 2 A, 2 B, 2 C every day
+    return cov.A===2 && cov.B===2 && cov.C===2;
+  }
+
+  // ======================
+  // UI
+  // ======================
   const monthsWrap=document.getElementById("monthsWrap");
   const showMonthsSel=document.getElementById("showMonths");
   const modeSel=document.getElementById("mode");
@@ -469,7 +463,8 @@
   const themSel=document.getElementById("themSel");
   const statusMode=document.getElementById("statusMode");
   const statusPick=document.getElementById("statusPick");
-  const statusValidation=document.getElementById("statusValidation");
+  const statusInfo=document.getElementById("statusInfo");
+  const statusCoverage=document.getElementById("statusCoverage");
 
   function setPill(el, text, kind){
     el.textContent=text;
@@ -494,20 +489,75 @@
     return `${months[d.getMonth()]} ${d.getFullYear()}`;
   }
 
+  // Month dropdowns (Safari-safe)
+  const startMonthSel=document.getElementById("startMonthSel");
+  const startYearSel=document.getElementById("startYearSel");
+  const monthNames=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  for(let i=0;i<12;i++){
+    const o=document.createElement("option");
+    o.value=String(i+1).padStart(2,"0");
+    o.textContent=monthNames[i];
+    startMonthSel.appendChild(o);
+  }
+  const now=new Date();
+  const baseYear=now.getFullYear();
+  for(let y=baseYear-1; y<=baseYear+5; y++){
+    const o=document.createElement("option");
+    o.value=String(y);
+    o.textContent=String(y);
+    startYearSel.appendChild(o);
+  }
+
+  function syncMonthDropdownFromState(){
+    const [yy,mm]=state.startMonthISO.split("-");
+    startYearSel.value=yy;
+    startMonthSel.value=mm;
+  }
+  function setStateMonthFromDropdown(){
+    const yy=startYearSel.value;
+    const mm=startMonthSel.value;
+    state.startMonthISO = `${yy}-${mm}`;
+    saveState();
+    render();
+  }
+
+  let pick = null; // for swap: {person, iso}
+
   function render(){
     showMonthsSel.value=String(state.showMonths);
     modeSel.value=state.mode;
     buildSelectOptions(meSel, state.me);
     buildSelectOptions(themSel, state.them);
+    syncMonthDropdownFromState();
 
     setPill(statusMode, `MODE: ${state.mode.toUpperCase()}`);
-    setPill(statusPick, pick?`PICK: ${pick.person} @ ${pick.iso}`:"PICK: —");
+    setPill(statusPick, pick ? `PICK: ${pick.person} @ ${pick.iso}` : "PICK: —");
+    setPill(statusInfo, state.pendingMDO ? `INFO: Pick MDO day (ME) in week of ${state.pendingMDO.weekStartISO}` : "INFO: —");
 
     monthsWrap.innerHTML="";
     const start=parseISOMonth(state.startMonthISO);
+
+    // overall coverage status for visible range
+    let anyBad=false;
+
     for(let i=0;i<Number(state.showMonths);i++){
-      monthsWrap.appendChild(renderMonthPanel(addMonths(start,i)));
+      const mDate = addMonths(start,i);
+      const panel = renderMonthPanel(mDate);
+      monthsWrap.appendChild(panel);
+
+      const y=mDate.getFullYear(), m0=mDate.getMonth(), dim=daysInMonth(y,m0);
+      for(let d=1; d<=dim; d++){
+        const iso = isoDate(new Date(y,m0,d));
+        const cov = dayCoverage(iso);
+        if(!coverageOk(cov)) anyBad=true;
+      }
     }
+
+    setPill(
+      statusCoverage,
+      anyBad ? "COVERAGE: NOT 2/2/2 (see COV row)" : "COVERAGE: OK 2/2/2",
+      anyBad ? "bad" : "ok"
+    );
   }
 
   function renderMonthPanel(monthDate){
@@ -533,6 +583,7 @@
     const thead=document.createElement("thead");
     table.appendChild(thead);
 
+    // Row 1: day numbers
     const r1=document.createElement("tr");
     thead.appendChild(r1);
 
@@ -553,15 +604,18 @@
       r1.appendChild(th);
     }
 
+    // Row 2: DOW
     const r2=document.createElement("tr");
     thead.appendChild(r2);
 
     const thN2=document.createElement("th");
     thN2.className="stickyLeft colName";
+    thN2.textContent="";
     r2.appendChild(thN2);
 
     const thS2=document.createElement("th");
     thS2.className="stickyLeft2 colSlot";
+    thS2.textContent="";
     r2.appendChild(thS2);
 
     for(let d=1; d<=dim; d++){
@@ -572,30 +626,57 @@
       r2.appendChild(th);
     }
 
+    // Row 3: Coverage
+    const r3=document.createElement("tr");
+    thead.appendChild(r3);
+
+    const thC1=document.createElement("th");
+    thC1.className="stickyLeft colName cov";
+    thC1.textContent="COV";
+    r3.appendChild(thC1);
+
+    const thC2=document.createElement("th");
+    thC2.className="stickyLeft2 colSlot cov";
+    thC2.textContent="(A/B/C)";
+    r3.appendChild(thC2);
+
+    for(let d=1; d<=dim; d++){
+      const iso = isoDate(new Date(y,m0,d));
+      const cov = dayCoverage(iso);
+      const th=document.createElement("th");
+      th.className="colDay cov";
+      th.textContent = `${cov.A}/${cov.B}/${cov.C}`;
+      if(!coverageOk(cov)){
+        th.style.color = "var(--warn)";
+        th.style.fontWeight = "1000";
+      }
+      r3.appendChild(th);
+    }
+
     const tbody=document.createElement("tbody");
     table.appendChild(tbody);
 
-    // Render ME + THEM as a 2-row block at top (same columns)
+    // ME + THEM at top (two rows), same columns for easy swapping
     if(state.me && state.them && state.me!==state.them){
-      tbody.appendChild(renderPersonRow(monthDate, state.me, dim));
-      tbody.appendChild(renderPersonRow(monthDate, state.them, dim));
+      tbody.appendChild(renderPersonRow(monthDate, state.me, dim, true));
+      tbody.appendChild(renderPersonRow(monthDate, state.them, dim, true));
       const div=document.createElement("tr");
-      div.className="groupDivider";
+      div.className="divider";
       const td=document.createElement("td");
       td.colSpan=2+dim;
       div.appendChild(td);
       tbody.appendChild(div);
     }
 
-    // Then render everyone
+    // Everyone
     for(const emp of EMPLOYEES){
-      tbody.appendChild(renderPersonRow(monthDate, emp.name, dim));
+      tbody.appendChild(renderPersonRow(monthDate, emp.name, dim, false));
     }
 
     return panel;
   }
 
-  function renderPersonRow(monthDate, person, dim){
+  function renderPersonRow(monthDate, person, dim, isTop){
     const y=monthDate.getFullYear();
     const m0=monthDate.getMonth();
     const emp=getEmp(person);
@@ -605,7 +686,7 @@
 
     const tdName=document.createElement("td");
     tdName.className="stickyLeft colName nameCell";
-    tdName.textContent=person;
+    tdName.textContent=person + (isTop ? (person===state.me ? " (ME)" : " (THEM)") : "");
     tr.appendChild(tdName);
 
     const tdSlot=document.createElement("td");
@@ -616,14 +697,16 @@
     for(let d=1; d<=dim; d++){
       const date=new Date(y,m0,d);
       const iso=isoDate(date);
-      const code=displayCode(person, iso);
+      const code=codeFor(person, iso);
 
       const td=document.createElement("td");
       td.className="colDay code";
       if(isWeekend(date)) td.classList.add("wknd");
+
       td.dataset.person=person;
       td.dataset.iso=iso;
       td.dataset.code=code;
+
       td.textContent=code;
 
       if(getOverride(person, iso)!==null) td.classList.add("changed");
@@ -636,94 +719,202 @@
     return tr;
   }
 
+  // ======================
+  // Swap + Double logic
+  // ======================
+  function isWeekday(d){
+    const day = d.getDay();
+    return day>=1 && day<=5;
+  }
+  function isOff(code){
+    return code==="RDO" || code==="MDO";
+  }
+  function isWorkLike(code){
+    if(!code) return false;
+    if(code==="RDO" || code==="MDO") return false;
+    return true;
+  }
+
+  function validateSwap(me, them, isoMe, isoThem){
+    const errors=[];
+    if(!sameWeek(isoMe, isoThem)) errors.push("Cannot cross weeks (Sun–Sat).");
+    if(errors.length) return {ok:false, errors};
+    return {ok:true, errors:[]};
+  }
+
+  function doSwap(me, them, isoMe, isoThem){
+    const v = validateSwap(me, them, isoMe, isoThem);
+    if(!v.ok) return v;
+
+    const a = codeFor(me, isoMe);
+    const b = codeFor(them, isoThem);
+
+    setOverride(me, isoMe, b);
+    setOverride(them, isoThem, a);
+
+    return {ok:true, errors:[]};
+  }
+
+  function makeDoubleCode(existing){
+    // existing is ME's current code on that day
+    // doubles allowed: A/B, B/C. If baseline is A/C or C/A we keep it.
+    if(!existing) return null;
+    if(existing.includes("/")) return null; // already double in baseline/override
+    const norm = normalizeForCoverage(existing.trim());
+    if(norm === "A") return "A/B";
+    if(norm === "C") return "B/C";
+    if(norm === "B") return "__CHOOSE__";
+    return null;
+  }
+
+  function chooseForB(){
+    const choice = window.prompt('B day double: type "A/B" or "B/C"', "A/B");
+    if(choice === null) return null;
+    const cleaned = choice.trim().toUpperCase();
+    if(cleaned==="A/B" || cleaned==="B/C") return cleaned;
+    return null;
+  }
+
+  function canPlaceMDO(person, iso){
+    const d = parseISODate(iso);
+    if(!isWeekday(d)) return false;
+    const c = codeFor(person, iso);
+    // cannot place MDO on a working weekend (blocked by weekday check)
+    // allow replacing B/R/RDO/MDO only (simple)
+    const norm = c.trim();
+    return (normalizeForCoverage(norm)==="B" || norm==="RDO" || norm==="MDO");
+  }
+
   function onCellClick(td){
-    if(state.mode==="view") return;
+    const mode = state.mode;
+    const person = td.dataset.person;
+    const iso = td.dataset.iso;
 
-    const person=td.dataset.person;
-    const iso=td.dataset.iso;
+    if(mode==="view") return;
 
-    if(person!==state.me && person!==state.them){
-      setPill(statusValidation, "VALIDATION: click only ME/THEM rows", "bad");
-      return;
-    }
-
-    if(!pick){
-      pick={person, iso};
+    // DOUBLE flow: if pendingMDO, next click must be ME MDO day in same week
+    if(mode==="double" && state.pendingMDO){
+      if(person !== state.me){
+        setPill(statusInfo, "INFO: MDO must be on ME row", "bad");
+        return;
+      }
+      if(!sameWeek(state.pendingMDO.weekStartISO, weekStartSundayISO(iso))){
+        setPill(statusInfo, "INFO: MDO must be in the same week", "bad");
+        return;
+      }
+      if(!canPlaceMDO(state.me, iso)){
+        setPill(statusInfo, "INFO: MDO must be weekday B/R/RDO/MDO", "bad");
+        return;
+      }
+      setOverride(state.me, iso, "MDO");
+      state.pendingMDO = null;
+      pick = null;
+      saveState();
+      setPill(statusInfo, "INFO: Double complete (MDO placed)", "ok");
       render();
       return;
     }
 
-    // second click must be opposite person
-    if(pick.person===person){
-      pick={person, iso};
-      render();
+    if(mode==="swap"){
+      // restrict swapping clicks to ME/THEM rows for clarity
+      if(person !== state.me && person !== state.them){
+        setPill(statusInfo, "INFO: click only ME/THEM rows", "bad");
+        return;
+      }
+
+      if(!pick){
+        pick = {person, iso};
+        setPill(statusPick, `PICK: ${pick.person} @ ${pick.iso}`);
+        render();
+        return;
+      }
+
+      // second click must be the other person
+      if(pick.person === person){
+        pick = {person, iso};
+        render();
+        return;
+      }
+
+      const isoMe = (pick.person===state.me) ? pick.iso : iso;
+      const isoThem = (pick.person===state.them) ? pick.iso : iso;
+
+      const res = doSwap(state.me, state.them, isoMe, isoThem);
+      if(res.ok){
+        pick = null;
+        saveState();
+        setPill(statusInfo, "INFO: Swapped", "ok");
+        render();
+      }else{
+        setPill(statusInfo, `INFO: ${res.errors[0]}`, "bad");
+      }
       return;
     }
 
-    const isoMe = (pick.person===state.me) ? pick.iso : iso;
-    const isoThem = (pick.person===state.them) ? pick.iso : iso;
+    if(mode==="double"){
+      // only ME row
+      if(person !== state.me){
+        setPill(statusInfo, "INFO: Double can only be created on ME row", "bad");
+        return;
+      }
+      const d = parseISODate(iso);
+      if(!isWeekday(d)){
+        setPill(statusInfo, "INFO: Double must be on a weekday (Mon–Fri)", "bad");
+        return;
+      }
 
-    const res=doSwap(state.me, state.them, isoMe, isoThem);
-    if(res.ok){
-      setPill(statusValidation, "VALIDATION: OK (swapped)", "ok");
-      pick=null;
+      const existing = codeFor(state.me, iso);
+      const proposal = makeDoubleCode(existing);
+      if(proposal === null){
+        setPill(statusInfo, "INFO: Cannot double this cell (already double or not A/B/C/R)", "bad");
+        return;
+      }
+
+      let finalCode = proposal;
+      if(proposal === "__CHOOSE__"){
+        const chosen = chooseForB();
+        if(!chosen){
+          setPill(statusInfo, "INFO: Cancelled (must type A/B or B/C)", "bad");
+          return;
+        }
+        finalCode = chosen;
+      }
+
+      // place the double
+      setOverride(state.me, iso, finalCode);
+
+      // require MDO in same week
+      state.pendingMDO = { weekStartISO: weekStartSundayISO(iso), person: state.me };
+      pick = null;
+      saveState();
+      setPill(statusInfo, `INFO: Double set (${finalCode}). Now pick MDO day in same week.`, "ok");
       render();
-    }else{
-      setPill(statusValidation, `VALIDATION: ${res.errors[0]}`, "bad");
+      return;
     }
   }
 
-  // Month dropdowns (works on Safari)
-  const startMonthSel=document.getElementById("startMonthSel");
-  const startYearSel=document.getElementById("startYearSel");
-  const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
-  for(let i=0;i<12;i++){
-    const o=document.createElement("option");
-    o.value=String(i+1).padStart(2,"0");
-    o.textContent=months[i];
-    startMonthSel.appendChild(o);
-  }
-  const now=new Date();
-  const baseYear=now.getFullYear();
-  for(let y=baseYear-1; y<=baseYear+3; y++){
-    const o=document.createElement("option");
-    o.value=String(y);
-    o.textContent=String(y);
-    startYearSel.appendChild(o);
-  }
-
-  function syncMonthDropdownFromState(){
-    const [yy,mm]=state.startMonthISO.split("-");
-    startYearSel.value=yy;
-    startMonthSel.value=mm;
-  }
-  function setStateMonthFromDropdown(){
-    const yy=startYearSel.value;
-    const mm=startMonthSel.value;
-    state.startMonthISO = `${yy}-${mm}`;
-    saveState();
-    render();
-  }
-
+  // ======================
+  // Events
+  // ======================
   document.getElementById("prevBtn").addEventListener("click", ()=>{
     const d=parseISOMonth(state.startMonthISO);
     state.startMonthISO=isoMonth(addMonths(d,-1));
-    saveState();
-    syncMonthDropdownFromState();
-    render();
+    state.pendingMDO = null;
+    pick = null;
+    saveState(); render();
   });
   document.getElementById("nextBtn").addEventListener("click", ()=>{
     const d=parseISOMonth(state.startMonthISO);
     state.startMonthISO=isoMonth(addMonths(d,1));
-    saveState();
-    syncMonthDropdownFromState();
-    render();
+    state.pendingMDO = null;
+    pick = null;
+    saveState(); render();
   });
   document.getElementById("thisBtn").addEventListener("click", ()=>{
     state.startMonthISO=isoMonth(new Date());
-    saveState();
-    syncMonthDropdownFromState();
-    render();
+    state.pendingMDO = null;
+    pick = null;
+    saveState(); render();
   });
 
   startMonthSel.addEventListener("change", setStateMonthFromDropdown);
@@ -735,56 +926,67 @@
   });
   modeSel.addEventListener("change", ()=>{
     state.mode=modeSel.value;
+    state.pendingMDO = null;
     pick=null;
     saveState(); render();
   });
   meSel.addEventListener("change", ()=>{
     state.me=meSel.value;
-    if(state.them===state.me) state.them=EMPLOYEES.find(e=>e.name!==state.me)?.name || state.me;
+    if(state.them===state.me){
+      state.them=EMPLOYEES.find(e=>e.name!==state.me)?.name || state.me;
+    }
+    state.pendingMDO = null;
     pick=null;
     saveState(); render();
   });
   themSel.addEventListener("change", ()=>{
     state.them=themSel.value;
-    if(state.them===state.me) state.them=EMPLOYEES.find(e=>e.name!==state.me)?.name || state.me;
+    if(state.them===state.me){
+      state.them=EMPLOYEES.find(e=>e.name!==state.me)?.name || state.me;
+    }
+    state.pendingMDO = null;
     pick=null;
     saveState(); render();
   });
 
-  document.getElementById("resetSwapsBtn").addEventListener("click", ()=>{
-    state.overrides={};
-    state.changeLog=[];
-    pick=null;
+  document.getElementById("resetBtn").addEventListener("click", ()=>{
+    state.overrides = {};
+    state.pendingMDO = null;
+    pick = null;
     saveState();
-    setPill(statusValidation, "VALIDATION: reset", null);
+    setPill(statusInfo, "INFO: Reset done", "ok");
     render();
-  });
-
-  document.getElementById("lockBaselineBtn").addEventListener("click", ()=>{
-    state.baselineLocked=true;
-    saveState();
-    setPill(statusValidation, "VALIDATION: baseline locked", "ok");
-  });
-  document.getElementById("unlockBaselineBtn").addEventListener("click", ()=>{
-    state.baselineLocked=false;
-    saveState();
-    setPill(statusValidation, "VALIDATION: baseline unlocked", "ok");
   });
 
   document.getElementById("genFormBtn").addEventListener("click", ()=>{
     const w=window.open("", "_blank");
     if(!w) return;
-    w.document.write("<html><body><h2>Print this window to PDF</h2><p>Form generator placeholder (next step).</p></body></html>");
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Print</title></head>
+      <body style="font-family:Arial,sans-serif">
+        <h2>Swap Form (Print Window)</h2>
+        <p>This is a placeholder. Next step: exact supervisor form layout + names + current/requested schedule boxes.</p>
+        <p><b>ME:</b> ${state.me}<br><b>THEM:</b> ${state.them}<br><b>Start Month:</b> ${state.startMonthISO}</p>
+        <script>window.onload=()=>window.print();</script>
+      </body></html>`);
     w.document.close();
-    w.focus();
-    w.print();
   });
 
-  // init sanity
-  if(!getEmp(state.me)) state.me=EMPLOYEES[0]?.name||"";
-  if(!getEmp(state.them) || state.them===state.me) state.them=EMPLOYEES.find(e=>e.name!==state.me)?.name || state.me;
+  // ======================
+  // Init
+  // ======================
+  if(!getEmp(state.me)) state.me = EMPLOYEES[0]?.name || "";
+  if(!getEmp(state.them) || state.them===state.me) state.them = EMPLOYEES.find(e=>e.name!==state.me)?.name || state.me;
 
+  showMonthsSel.value = String(state.showMonths);
+  modeSel.value = state.mode;
+
+  // Start month dropdown
   syncMonthDropdownFromState();
+
+  // Fill selects
+  buildSelectOptions(meSel, state.me);
+  buildSelectOptions(themSel, state.them);
+
   saveState();
   render();
 </script>
