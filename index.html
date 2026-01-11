@@ -1,64 +1,59 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Rotating Shift — Schedule + Swap</title>
-
   <style>
     :root{
       --ink:#111;
       --grid:#1f1f1f;
-      --hdr:#0f0f0f;
-      --hdr2:#1b1b1b;
-      --paper:#ffffff;
+      --hdr:#0b0b0b;
+      --hdr2:#151515;
 
-      --fillWhite:#ffffff;
-      --fillGray:#d9d9d9;
-      --fillDark:#2a2a2a;
+      --aBg:#1f1f1f; --aFg:#fff;     /* A = night */
+      --bBg:#ffffff; --bFg:#111;     /* B = day */
+      --cBg:#d9d9d9; --cFg:#111;     /* C = evening */
+      --rdoBg:#1f1f1f; --rdoFg:#fff; /* RDO */
+      --mdoBg:#bfbfbf; --mdoFg:#111; /* MDO */
+      --rBg:#ededed; --rFg:#111;     /* R */
+      --holBg:#ffe8ea; --holFg:#b10014; /* HOL */
+      --toBg:#e9f2ff; --toFg:#111;   /* COMP/PE/SICK/IOD/DIF */
 
-      --accentRed:#b10014;
-      --pick:#000;
+      --sel:#0b57d0;
       --chg:#000;
+      --accent:#b10014;
     }
 
     *{ box-sizing:border-box; }
-    body{ margin:0; background:var(--paper); color:var(--ink); font-family: Arial, Helvetica, sans-serif; }
-
-    header{
-      border-bottom:3px solid var(--grid);
-      padding:12px 14px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
-      align-items:flex-end;
-      justify-content:space-between;
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      color:var(--ink);
+      background:#fff;
     }
 
-    .controls{
+    /* ===== Top bar (simple, no fancy UI) ===== */
+    header{
+      padding:10px 12px;
+      border-bottom:3px solid var(--grid);
       display:flex;
       flex-wrap:wrap;
       gap:10px;
       align-items:flex-end;
+      justify-content:space-between;
     }
-
-    label{
-      display:block;
-      font-size:12px;
-      font-weight:800;
-      color:#222;
-      margin:0 0 6px 2px;
-    }
-
-    select,input{
+    .group{ display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+    .field{ min-width:200px; }
+    label{ display:block; font-size:12px; font-weight:900; margin:0 0 6px 2px; }
+    select, input{
+      width:100%;
       padding:10px 12px;
       border:2px solid var(--grid);
       border-radius:10px;
       background:#fff;
       font-weight:900;
-      min-width:220px;
     }
-
     button{
       padding:10px 12px;
       border:2px solid var(--grid);
@@ -66,19 +61,20 @@
       background:#fff;
       font-weight:900;
       cursor:pointer;
+      white-space:nowrap;
     }
     button.primary{ background:#111; color:#fff; }
-    button.danger{ background:#b10014; color:#fff; border-color:#b10014; }
+    button.danger{ background:var(--accent); color:#fff; border-color:var(--accent); }
     button:hover{ opacity:.88; }
 
-    main{ padding:12px 14px 28px; }
+    main{ padding:10px 12px 18px; }
 
-    .bar{
+    .statusRow{
       display:flex;
       flex-wrap:wrap;
       gap:10px;
       align-items:center;
-      margin-bottom:12px;
+      margin-bottom:10px;
     }
     .pill{
       border:2px solid var(--grid);
@@ -89,305 +85,316 @@
       background:#fff;
     }
     .pill.ok{ border-color:#1b5e20; color:#1b5e20; }
-    .pill.bad{ border-color:#b10014; color:#b10014; }
+    .pill.bad{ border-color:var(--accent); color:var(--accent); }
+    .pill.info{ border-color:#0b57d0; color:#0b57d0; }
 
-    .layout{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:14px;
-    }
-    @media (min-width: 1100px){
-      .layout{ grid-template-columns: 1fr 1fr; }
-    }
-
-    .pane{
+    /* ===== Schedule (closer to original paper) ===== */
+    .paperWrap{
       border:2px solid var(--grid);
-      border-radius:14px;
+      border-radius:12px;
       overflow:hidden;
-      background:#fff;
     }
-
-    .paneHead{
+    .paperTop{
       background:var(--hdr);
       color:#fff;
       padding:10px 12px;
       border-bottom:2px solid var(--grid);
       display:flex;
-      flex-wrap:wrap;
+      align-items:center;
       justify-content:space-between;
-      align-items:baseline;
-      gap:10px;
-    }
-    .paneTitle{ font-weight:900; letter-spacing:.4px; }
-    .paneSub{ font-size:12px; opacity:.9; font-weight:800; }
-
-    .months{
-      display:grid;
-      grid-template-columns: 1fr;
       gap:12px;
-      padding:12px;
+      flex-wrap:wrap;
+    }
+    .paperTitle{
+      font-weight:900;
+      letter-spacing:.6px;
+    }
+    .paperMonth{
+      font-weight:900;
+      opacity:.95;
+      white-space:nowrap;
+    }
+
+    .scrollX{
+      overflow:auto;
       background:#fff;
     }
-    @media (min-width: 1350px){
-      .months{ grid-template-columns: 1fr 1fr; }
-    }
 
-    .monthCard{
-      border:2px solid var(--grid);
-      border-radius:12px;
-      overflow:hidden;
-    }
-    .monthHead{
-      background:var(--hdr2);
-      color:#fff;
-      padding:8px 10px;
-      border-bottom:2px solid var(--grid);
-      display:flex;
-      justify-content:space-between;
-      align-items:baseline;
-      gap:10px;
-    }
-    .monthTitle{ font-weight:900; font-size:13px; }
-    .monthTag{ font-weight:800; font-size:12px; opacity:.9; }
-
-    table.cal{
-      width:100%;
+    table.schedule{
       border-collapse:collapse;
+      width:max-content;
+      min-width:100%;
       table-layout:fixed;
+      font-weight:900;
     }
-    table.cal th, table.cal td{
+    table.schedule th, table.schedule td{
       border:2px solid var(--grid);
       text-align:center;
       padding:0;
     }
-    table.cal th{
+
+    /* Sticky left columns like printed schedule */
+    .sticky{
+      position:sticky;
+      left:0;
+      z-index:3;
+      background:#fff;
+    }
+    .sticky2{
+      position:sticky;
+      left:170px;
+      z-index:3;
+      background:#fff;
+    }
+    .sticky3{
+      position:sticky;
+      left:260px;
+      z-index:3;
+      background:#fff;
+    }
+
+    /* Left column sizes */
+    .colName{ width:170px; min-width:170px; max-width:170px; }
+    .colShift{ width:90px; min-width:90px; max-width:90px; }
+    .colSlot{ width:70px; min-width:70px; max-width:70px; }
+
+    /* Header like original: black bar with white text */
+    thead th{
+      background:var(--hdr);
+      color:#fff;
+    }
+    .headName, .headShift, .headSlot{
+      background:var(--hdr);
+      color:#fff;
+      font-size:12px;
+      letter-spacing:.2px;
+      padding:6px 8px;
+    }
+    .dayNum{
+      width:44px;
+      min-width:44px;
+      max-width:44px;
+      height:28px;
+      font-size:12px;
+    }
+    .dayDow{
+      width:44px;
+      min-width:44px;
+      max-width:44px;
+      height:22px;
+      font-size:11px;
+      opacity:.95;
+      background:var(--hdr2);
+    }
+
+    /* Row labels (ME / THEM) */
+    .rowBand{
       background:#000;
       color:#fff;
-      font-size:11px;
-      font-weight:900;
-      padding:6px 2px;
+      font-size:12px;
       letter-spacing:.2px;
+      padding:6px 8px;
+      text-align:left;
     }
-    td.cell{
-      height:46px;
+
+    /* Data rows */
+    tbody td{
+      height:40px;
+      width:44px;
+      min-width:44px;
+      max-width:44px;
       position:relative;
       user-select:none;
-      cursor:pointer;
     }
-    td.blank{ background:#fff; cursor:default; }
-
-    tr.w0 td.cell{ background:#f1f1f1; }
-    tr.w1 td.cell{ background:#e6e6e6; }
-
-    .dayNum{
-      position:absolute;
-      top:3px; left:5px;
-      font-size:10px;
-      font-weight:900;
-      color:#222;
-    }
-    .code{
-      position:absolute;
-      inset:0;
+    tbody td .code{
       display:flex;
       align-items:center;
       justify-content:center;
-      font-weight:900;
-      font-size:14px;
+      height:100%;
+      width:100%;
+      font-size:13px;
       letter-spacing:.3px;
     }
 
-    .A{ background:var(--fillDark); color:#fff; }
-    .B{ background:var(--fillWhite); color:#111; }
-    .C{ background:var(--fillGray); color:#111; }
-    .RDO{ background:var(--fillDark); color:#fff; }
-    .MDO{ background:#bfbfbf; color:#111; }
-    .R{ background:#ededed; color:#111; }
-    .HOL{ background:#ffe8ea; color:var(--accentRed); }
-    .COMP,.PE,.SICK,.IOD,.DIF{ background:#e9f2ff; color:#111; }
+    /* Paper-ish alternating row backgrounds */
+    tbody tr.dataRow:nth-child(odd) td{ background:#f1f1f1; }
+    tbody tr.dataRow:nth-child(even) td{ background:#e6e6e6; }
 
-    .picked{ outline:4px solid var(--pick); outline-offset:-4px; }
-    .changed{ box-shadow: inset 0 0 0 4px var(--chg); }
+    /* Name/shift/slot cells */
+    .nameCell,.shiftCell,.slotCell{
+      text-align:left;
+      padding:6px 8px !important;
+      background:#fff !important;
+      z-index:4;
+    }
+    .nameCell{ font-size:12px; }
+    .shiftCell,.slotCell{ font-size:12px; text-align:center; }
 
-    .hint{
-      border-top:2px solid var(--grid);
-      padding:10px 12px;
-      font-size:12px;
-      font-weight:900;
-      background:#fff;
+    /* Code color blocks (like schedule) */
+    .A{ background:var(--aBg) !important; color:var(--aFg) !important; }
+    .B{ background:var(--bBg) !important; color:var(--bFg) !important; }
+    .C{ background:var(--cBg) !important; color:var(--cFg) !important; }
+    .RDO{ background:var(--rdoBg) !important; color:var(--rdoFg) !important; }
+    .MDO{ background:var(--mdoBg) !important; color:var(--mdoFg) !important; }
+    .R{ background:var(--rBg) !important; color:var(--rFg) !important; }
+    .HOL{ background:var(--holBg) !important; color:var(--holFg) !important; }
+    .COMP,.PE,.SICK,.IOD,.DIF{ background:var(--toBg) !important; color:var(--toFg) !important; }
+
+    /* Click selection / change marker */
+    td.pick{
+      outline:4px solid var(--sel);
+      outline-offset:-4px;
+      z-index:2;
+    }
+    td.changed::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      box-shadow: inset 0 0 0 3px var(--chg);
+      pointer-events:none;
     }
 
-    .box{
-      border:2px solid var(--grid);
-      border-radius:14px;
+    .errors{
+      margin-top:10px;
+      border:2px solid var(--accent);
+      border-radius:12px;
       padding:10px 12px;
-      background:#fff;
-      font-size:12px;
       font-weight:900;
+      color:var(--accent);
+      white-space:pre-wrap;
+      display:none;
+    }
+
+    .legend{
+      margin-top:10px;
+      border:2px solid var(--grid);
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:900;
+      font-size:12px;
       line-height:1.35;
       white-space:pre-wrap;
-    }
-    .box.red{
-      border-color:#b10014;
-      color:#b10014;
     }
   </style>
 </head>
 
 <body>
 <header>
-  <div class="controls">
-    <div>
-      <label>Start Month</label>
-      <input id="startMonth" type="month"/>
+  <div class="group">
+    <div class="field">
+      <label>Month</label>
+      <input id="monthPick" type="month" />
     </div>
 
-    <div>
-      <label>Show Months</label>
-      <select id="monthsShown">
-        <option value="3">3</option>
-        <option value="4" selected>4</option>
+    <div class="field" style="min-width:160px;">
+      <label>Jump</label>
+      <div style="display:flex; gap:8px;">
+        <button id="prev">◀ Prev</button>
+        <button id="next">Next ▶</button>
+        <button id="thisMonth" class="primary">This Month</button>
+      </div>
+    </div>
+
+    <div class="field" style="min-width:140px;">
+      <label>Swap Mode</label>
+      <select id="swapMode">
+        <option value="on" selected>ON</option>
+        <option value="off">OFF</option>
       </select>
-    </div>
-
-    <div>
-      <label>Mode</label>
-      <select id="mode">
-        <option value="view" selected>View</option>
-        <option value="swap">Swap</option>
-      </select>
-    </div>
-
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <button id="prev">◀ Prev</button>
-      <button id="next">Next ▶</button>
-      <button id="thisMonth" class="primary">This Month</button>
     </div>
   </div>
 
-  <div class="controls">
-    <div>
+  <div class="group">
+    <div class="field">
       <label>ME</label>
       <select id="me"></select>
     </div>
-    <div>
+    <div class="field">
       <label>SWAP WITH</label>
       <select id="them"></select>
     </div>
 
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
       <button id="resetSwaps">Reset Swaps</button>
-      <button id="exportForm" class="primary">Generate Form (PDF/JPG)</button>
+      <button id="generateForm" class="primary">Generate Form (Print)</button>
+      <button id="lockBaseline" class="danger">Lock Baseline</button>
+      <button id="resetBaseline">Reset Baseline</button>
     </div>
   </div>
 </header>
 
 <main>
-  <div class="bar">
-    <span class="pill" id="pillMode">MODE: VIEW</span>
-    <span class="pill" id="pillBase">BASELINE: NOT LOCKED</span>
-    <span class="pill" id="pillValid">VALIDATION: —</span>
-    <button id="lockBaseline" class="danger">Lock Baseline (Jan–Mar 2026)</button>
-    <button id="resetBaseline">Reset Baseline</button>
+  <div class="statusRow">
+    <span class="pill info" id="swapHint">Swap: click a day on ME, then click a day on THEM.</span>
+    <span class="pill" id="baselinePill">BASELINE: NOT LOCKED</span>
+    <span class="pill" id="validPill">VALIDATION: —</span>
   </div>
 
-  <div class="layout">
-    <section class="pane">
-      <div class="paneHead">
-        <div class="paneTitle" id="leftTitle">ME</div>
-        <div class="paneSub" id="leftSub">Click a day here, then a day on THEM to swap.</div>
-      </div>
-      <div class="months" id="leftMonths"></div>
-      <div class="hint" id="leftHint"></div>
-    </section>
-
-    <section class="pane">
-      <div class="paneHead">
-        <div class="paneTitle" id="rightTitle">THEM</div>
-        <div class="paneSub" id="rightSub">Swap mode requires selecting both people.</div>
-      </div>
-      <div class="months" id="rightMonths"></div>
-      <div class="hint" id="rightHint"></div>
-    </section>
+  <div class="paperWrap">
+    <div class="paperTop">
+      <div class="paperTitle">MONTHLY LABOR SCHEDULE — ROTATING SHIFT (MID SECTION)</div>
+      <div class="paperMonth" id="paperMonthText"></div>
+    </div>
+    <div class="scrollX" id="tableHost"></div>
   </div>
 
-  <div id="errors" class="box red" style="display:none; margin-top:12px;"></div>
+  <div class="errors" id="errors"></div>
 
-  <div class="box" style="margin-top:12px;">
+  <div class="legend">
+Legend (Rotating Shift):
+A = night, B = day, C = evening
+RDO = regular day off, MDO = mutual day off, R = reserve (treated like B)
+HOL = holiday
+COMP = comp time, PE = personal excuse, SICK = sick leave, IOD = injury on duty, DIF = death in family
+
 Rules enforced (basic):
 • Week = SUN → SAT
-• If a week has NO time-off codes (HOL/COMP/PE/SICK/IOD/DIF), it must contain exactly 5 shifts (A/B/C/R) and 2 RDO
-• Swap is done by clicking one day on ME + one day on THEM
-• HOL/COMP/PE/SICK/IOD/DIF are treated as “time-off modifiers” (they don’t define the baseline loop)
+• If a week has NO time-off codes (HOL/COMP/PE/SICK/IOD/DIF), it must have exactly 5 shifts (A/B/C/R) and 2 RDO
+• Swap is ME click + THEM click (any two days)
   </div>
 </main>
 
 <script>
-/* =========================================================
-   EDIT THIS LIST to match your rotating shift mid-section
-   ========================================================= */
+/* ===========================
+   DATA — EDIT THIS LIST
+   =========================== */
 const EMPLOYEES = [
-  // SLOT 1
-  { name: "Kingston, Joseph C", slot: 1 },
-  { name: "Rodriguez, Roger", slot: 1 },
+  { name: "Kingston, Joseph C", slot: 1, shift: "LGA_6RR9.1" },
+  { name: "Rodriguez, Roger", slot: 1, shift: "LGA_6RR9.1" },
 
-  // SLOT 2
-  { name: "Joseph, George R", slot: 2 },
-  { name: "Ramanrane, Ashram", slot: 2 },
+  { name: "Joseph, George R", slot: 2, shift: "LGA_6RR9.2" },
+  { name: "Ramanrane, Ashram", slot: 2, shift: "LGA_6RR9.2" },
 
-  // SLOT 3
-  { name: "Segovia, Eduardo M", slot: 3 },
-  { name: "Victoria, Robert", slot: 3 },
+  { name: "Segovia, Eduardo M", slot: 3, shift: "LGA_6RR9.3" },
+  { name: "Victoria, Robert", slot: 3, shift: "LGA_6RR9.3" },
 
-  // SLOT 4
-  { name: "Bouaziz, Abdelghani", slot: 4 },
-  { name: "Gragossian, Alani", slot: 4 },
+  { name: "Bouaziz, Abdelghani", slot: 4, shift: "LGA_6RR9.4" },
+  { name: "Gragossian, Alani", slot: 4, shift: "LGA_6RR9.4" },
 
-  // SLOT 5
-  { name: "Handel, Joseph", slot: 5 },
-  { name: "Rakhmanov, Ravshan", slot: 5 },
+  { name: "Handel, Joseph", slot: 5, shift: "LGA_6RR9.5" },
+  { name: "Rakhmanov, Ravshan", slot: 5, shift: "LGA_6RR9.5" },
 
-  // SLOT 6
-  { name: "Rodriguez, Alexander", slot: 6 },
-  { name: "Svenjak, Mark", slot: 6 },
+  { name: "Rodriguez, Alexander", slot: 6, shift: "LGA_6RR9.6" },
+  { name: "Svenjak, Mark", slot: 6, shift: "LGA_6RR9.6" },
 ];
-
-const K_BASELINE = "pa_rot_baseline_42";
-const K_SWAPS = "pa_rot_swaps";
-const K_BASELINE_LOCKED = "pa_rot_baseline_locked";
 
 const TIME_OFF = new Set(["HOL","COMP","PE","SICK","IOD","DIF"]);
 const WORK = new Set(["A","B","C","R"]);
 
+const K_BASELINE = "pa_rot_baseline_42";
+const K_BASELINE_LOCKED = "pa_rot_baseline_locked";
+const K_SWAPS = "pa_rot_swaps";
+
 const pad2 = (n)=>String(n).padStart(2,"0");
 const isoDate = (y,m,d)=>`${y}-${pad2(m)}-${pad2(d)}`;
 const daysInMonth = (y,m)=>new Date(y,m,0).getDate();
-const addMonths = (y,m,delta)=>{
-  const dt = new Date(y, (m-1)+delta, 1);
-  return { y: dt.getFullYear(), m: dt.getMonth()+1 };
-};
 const monthLabel = (y,m)=>new Date(y,m-1,1).toLocaleString(undefined,{month:"long",year:"numeric"});
 const startOfDay = (iso)=>{ const d=new Date(iso+"T00:00:00"); d.setHours(0,0,0,0); return d; };
 const daysBetween = (aISO,bISO)=>Math.floor((startOfDay(bISO)-startOfDay(aISO))/(24*60*60*1000));
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-function buildMonthCells(y,m){
-  const dim = daysInMonth(y,m);
-  const firstDow = new Date(y,m-1,1).getDay();
-  const cells = [];
-  for(let i=0;i<firstDow;i++) cells.push(null);
-  for(let d=1; d<=dim; d++) cells.push(d);
-  while(cells.length % 7 !== 0) cells.push(null);
-  return {dim, cells};
-}
-function weekKeyForISO(iso){
-  const dt = new Date(iso+"T00:00:00");
-  const dow = dt.getDay();
-  dt.setDate(dt.getDate()-dow);
-  dt.setHours(0,0,0,0);
-  return dt.toISOString().slice(0,10);
-}
-const DOW = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
-
+/* 6-week loop baseline (42 days).
+   This is the SLOT 1 template; other slots offset by 7 days each. */
 const DEFAULT_BASELINE_42 = [
   "RDO","B","B","B","B","B","RDO",
   "RDO","A","A","A","A","A","RDO",
@@ -397,6 +404,7 @@ const DEFAULT_BASELINE_42 = [
   "RDO","C","C","C","C","C","RDO",
 ];
 
+/* Pick a real cycle anchor Sunday. */
 const CYCLE_START = "2026-01-04";
 const CYCLE_LEN = 42;
 
@@ -410,9 +418,7 @@ function loadBaseline(){
   if(raw){
     try{
       const arr = JSON.parse(raw);
-      if(Array.isArray(arr) && arr.length === 42){
-        return { locked, arr };
-      }
+      if(Array.isArray(arr) && arr.length === 42) return { locked, arr };
     }catch{}
   }
   return { locked:false, arr:[...DEFAULT_BASELINE_42] };
@@ -424,12 +430,6 @@ function saveBaseline(arr){
 function resetBaseline(){
   localStorage.removeItem(K_BASELINE);
   localStorage.removeItem(K_BASELINE_LOCKED);
-}
-function codeFromBaseline(dateISO, slot, baseline42){
-  const days = daysBetween(CYCLE_START, dateISO);
-  const offset = (slot-1)*7;
-  const idx = ((days+offset)%CYCLE_LEN + CYCLE_LEN) % CYCLE_LEN;
-  return baseline42[idx];
 }
 
 function loadSwaps(){
@@ -449,75 +449,26 @@ function resetSwaps(){
   localStorage.removeItem(K_SWAPS);
 }
 
-const elStartMonth = document.getElementById("startMonth");
-const elMonthsShown = document.getElementById("monthsShown");
-const elMode = document.getElementById("mode");
-const elMe = document.getElementById("me");
-const elThem = document.getElementById("them");
-
-const elLeftMonths = document.getElementById("leftMonths");
-const elRightMonths = document.getElementById("rightMonths");
-
-const pillMode = document.getElementById("pillMode");
-const pillBase = document.getElementById("pillBase");
-const pillValid = document.getElementById("pillValid");
-const elErrors = document.getElementById("errors");
-
-const leftTitle = document.getElementById("leftTitle");
-const rightTitle = document.getElementById("rightTitle");
-const leftHint = document.getElementById("leftHint");
-const rightHint = document.getElementById("rightHint");
-
-let pageOffset = 0;
-let pick = null;
-
-function initSelectors(){
-  elMe.innerHTML = "";
-  elThem.innerHTML = "";
-  EMPLOYEES.forEach((p, idx)=>{
-    const o1 = document.createElement("option");
-    o1.value = String(idx);
-    o1.textContent = `${p.name} (Slot ${p.slot})`;
-    elMe.appendChild(o1);
-
-    const o2 = document.createElement("option");
-    o2.value = String(idx);
-    o2.textContent = `${p.name} (Slot ${p.slot})`;
-    elThem.appendChild(o2);
-  });
-  elMe.value = "0";
-  elThem.value = "1";
+function codeFromBaseline(dateISO, slot, baseline42){
+  const days = daysBetween(CYCLE_START, dateISO);
+  const offset = (slot-1)*7;
+  const idx = ((days+offset)%CYCLE_LEN + CYCLE_LEN) % CYCLE_LEN;
+  return baseline42[idx];
 }
 
-function getMonthsWindow(){
-  const n = Number(elMonthsShown.value);
-  const [y,m] = elStartMonth.value.split("-").map(Number);
-  const maxOffset = Math.max(0, 12 - n);
-  pageOffset = Math.max(0, Math.min(pageOffset, maxOffset));
-  const months = [];
-  for(let i=0;i<n;i++){
-    const mm = addMonths(y,m,pageOffset+i);
-    months.push(mm);
-  }
-  return months;
-}
-
-function buildBaseScheduleForPerson(personIndex, months, baseline42){
-  const person = EMPLOYEES[personIndex];
+function buildBaseMap(personIdx, y, m, baseline42){
+  const p = EMPLOYEES[personIdx];
+  const dim = daysInMonth(y,m);
   const map = new Map();
-  for(const {y,m} of months){
-    const dim = daysInMonth(y,m);
-    for(let d=1; d<=dim; d++){
-      const iso = isoDate(y,m,d);
-      map.set(iso, codeFromBaseline(iso, person.slot, baseline42));
-    }
+  for(let d=1; d<=dim; d++){
+    const iso = isoDate(y,m,d);
+    map.set(iso, codeFromBaseline(iso, p.slot, baseline42));
   }
   return map;
 }
-
-function applyOverrides(personIndex, baseMap, swapsObj){
+function applyOverrides(personIdx, baseMap, swapsObj){
   const out = new Map(baseMap);
-  const key = String(personIndex);
+  const key = String(personIdx);
   if(swapsObj[key]){
     for(const [iso, code] of Object.entries(swapsObj[key])){
       if(out.has(iso)) out.set(iso, norm(code));
@@ -525,158 +476,247 @@ function applyOverrides(personIndex, baseMap, swapsObj){
   }
   return out;
 }
-
-function setOverride(swapsObj, personIndex, iso, code){
-  const pkey = String(personIndex);
-  swapsObj[pkey] = swapsObj[pkey] || {};
-  swapsObj[pkey][iso] = norm(code);
+function setOverride(swapsObj, personIdx, iso, code){
+  const key = String(personIdx);
+  swapsObj[key] = swapsObj[key] || {};
+  swapsObj[key][iso] = norm(code);
 }
-function clearOverride(swapsObj, personIndex, iso){
-  const pkey = String(personIndex);
-  if(swapsObj[pkey] && swapsObj[pkey][iso] != null){
-    delete swapsObj[pkey][iso];
-  }
+function clearOverride(swapsObj, personIdx, iso){
+  const key = String(personIdx);
+  if(swapsObj[key] && swapsObj[key][iso] != null) delete swapsObj[key][iso];
 }
 
-function validatePerson(personIndex, months, requestedMap){
+function weekKeyForISO(iso){
+  const dt = new Date(iso+"T00:00:00");
+  const dow = dt.getDay();
+  dt.setDate(dt.getDate()-dow);
+  dt.setHours(0,0,0,0);
+  return dt.toISOString().slice(0,10);
+}
+function validateMonth(personIdx, y, m, reqMap){
   const errs = [];
-  const isos = [];
-  for(const {y,m} of months){
-    const dim = daysInMonth(y,m);
-    for(let d=1; d<=dim; d++) isos.push(isoDate(y,m,d));
-  }
-
+  const dim = daysInMonth(y,m);
   const buckets = new Map();
-  for(const iso of isos){
+  for(let d=1; d<=dim; d++){
+    const iso = isoDate(y,m,d);
     const wk = weekKeyForISO(iso);
     const arr = buckets.get(wk) || [];
     arr.push(iso);
     buckets.set(wk, arr);
   }
-
   for(const [wk, arr] of buckets.entries()){
-    let shifts = 0, rdo = 0, hasTimeOff=false;
+    let shifts=0, rdo=0, hasTO=false;
     for(const iso of arr){
-      const c = norm(requestedMap.get(iso));
-      if(TIME_OFF.has(c)) hasTimeOff=true;
+      const c = norm(reqMap.get(iso));
+      if(TIME_OFF.has(c)) hasTO=true;
       if(c==="RDO") rdo++;
       if(WORK.has(c)) shifts++;
     }
-    if(!hasTimeOff){
-      if(rdo !== 2) errs.push(`Week ${wk}: ${EMPLOYEES[personIndex].name} must have 2 RDO (found ${rdo})`);
-      if(shifts !== 5) errs.push(`Week ${wk}: ${EMPLOYEES[personIndex].name} must have 5 shifts (found ${shifts})`);
+    if(!hasTO){
+      if(rdo !== 2) errs.push(`Week ${wk}: ${EMPLOYEES[personIdx].name} must have 2 RDO (found ${rdo})`);
+      if(shifts !== 5) errs.push(`Week ${wk}: ${EMPLOYEES[personIdx].name} must have 5 shifts (found ${shifts})`);
     }
   }
   return errs;
 }
 
-function cellClass(code){
+function codeClass(code){
   const c = norm(code);
   const ok = ["A","B","C","RDO","MDO","R","HOL","COMP","PE","SICK","IOD","DIF"];
   return ok.includes(c) ? c : "";
 }
 
-function renderMonth(personIndex, month, baseMap, reqMap, side){
-  const {y,m} = month;
-  const {cells} = buildMonthCells(y,m);
+/* ===========================
+   UI
+   =========================== */
+const elMonthPick = document.getElementById("monthPick");
+const elMe = document.getElementById("me");
+const elThem = document.getElementById("them");
+const elSwapMode = document.getElementById("swapMode");
 
-  let html = `
-    <div class="monthCard">
-      <div class="monthHead">
-        <div class="monthTitle">${monthLabel(y,m)}</div>
-        <div class="monthTag">${y}-${pad2(m)}</div>
-      </div>
-      <table class="cal">
-        <thead><tr>${DOW.map(d=>`<th>${d}</th>`).join("")}</tr></thead>
-        <tbody>
-  `;
+const elTableHost = document.getElementById("tableHost");
+const elPaperMonthText = document.getElementById("paperMonthText");
+const elErrors = document.getElementById("errors");
 
-  for(let r=0; r<cells.length/7; r++){
-    const stripe = (r%2===0) ? "w0" : "w1";
-    html += `<tr class="${stripe}">`;
+const baselinePill = document.getElementById("baselinePill");
+const validPill = document.getElementById("validPill");
+const swapHint = document.getElementById("swapHint");
 
-    for(let c=0;c<7;c++){
-      const day = cells[r*7+c];
-      if(day==null){
-        html += `<td class="blank"></td>`;
-        continue;
-      }
-      const iso = isoDate(y,m,day);
-      const code = reqMap.get(iso);
-      const base = baseMap.get(iso);
+let pick = null; // { side:"me"|"them", iso }
 
-      const pickedCls = (pick && pick.side===side && pick.iso===iso) ? "picked" : "";
-      const changedCls = (norm(code) !== norm(base)) ? "changed" : "";
+function initSelectors(){
+  elMe.innerHTML = "";
+  elThem.innerHTML = "";
+  EMPLOYEES.forEach((p, i)=>{
+    const o1 = document.createElement("option");
+    o1.value = String(i);
+    o1.textContent = `${p.name} (Slot ${p.slot})`;
+    elMe.appendChild(o1);
 
-      html += `
-        <td class="cell ${pickedCls} ${changedCls}" data-side="${side}" data-person="${personIndex}" data-iso="${iso}">
-          <div class="dayNum">${day}</div>
-          <div class="code ${cellClass(code)}">${norm(code)}</div>
-        </td>
-      `;
-    }
-    html += `</tr>`;
-  }
-
-  html += `</tbody></table></div>`;
-  return html;
+    const o2 = document.createElement("option");
+    o2.value = String(i);
+    o2.textContent = `${p.name} (Slot ${p.slot})`;
+    elThem.appendChild(o2);
+  });
+  elMe.value = "0";
+  elThem.value = "1";
 }
 
-function doSwap(isoMe, isoThem){
+function render(){
+  const [y,m] = elMonthPick.value.split("-").map(Number);
+  elPaperMonthText.textContent = monthLabel(y,m);
+
+  const baseObj = loadBaseline();
+  baselinePill.textContent = `BASELINE: ${baseObj.locked ? "LOCKED" : "NOT LOCKED"}`;
+  baselinePill.className = "pill " + (baseObj.locked ? "ok" : "bad");
+
   const meIdx = Number(elMe.value);
   const thIdx = Number(elThem.value);
 
-  const baseline = loadBaseline().arr;
-  const months = getMonthsWindow();
   const swapsObj = loadSwaps();
 
-  const baseMe = buildBaseScheduleForPerson(meIdx, months, baseline);
-  const baseTh = buildBaseScheduleForPerson(thIdx, months, baseline);
+  const baseMe = buildBaseMap(meIdx, y, m, baseObj.arr);
+  const baseTh = buildBaseMap(thIdx, y, m, baseObj.arr);
+  const reqMe = applyOverrides(meIdx, baseMe, swapsObj);
+  const reqTh = applyOverrides(thIdx, baseTh, swapsObj);
 
+  const dim = daysInMonth(y,m);
+
+  // Validation
+  const errs = [
+    ...validateMonth(meIdx, y, m, reqMe),
+    ...validateMonth(thIdx, y, m, reqTh),
+  ];
+  if(errs.length === 0){
+    validPill.textContent = "VALIDATION: OK";
+    validPill.className = "pill ok";
+    elErrors.style.display="none";
+    elErrors.textContent="";
+  }else{
+    validPill.textContent = `VALIDATION: ${errs.length} ISSUE(S)`;
+    validPill.className = "pill bad";
+    elErrors.style.display="block";
+    elErrors.textContent = errs.map(e=>"• "+e).join("\n");
+  }
+
+  swapHint.textContent = (elSwapMode.value==="on")
+    ? "Swap: click a day on ME, then click a day on THEM."
+    : "Swap is OFF (turn Swap Mode ON to swap).";
+
+  // Build schedule table (single month, full row of days)
+  let html = `<table class="schedule" aria-label="Rotating shift schedule">
+    <thead>
+      <tr>
+        <th class="headName sticky colName" rowspan="2">NAME</th>
+        <th class="headShift sticky2 colShift" rowspan="2">SHIFT</th>
+        <th class="headSlot sticky3 colSlot" rowspan="2">SLOT</th>
+        ${Array.from({length:dim}, (_,i)=>`<th class="dayNum">${i+1}</th>`).join("")}
+      </tr>
+      <tr>
+        ${Array.from({length:dim}, (_,i)=>{
+          const d = i+1;
+          const dow = new Date(y,m-1,d).getDay();
+          return `<th class="dayDow">${DOW[dow]}</th>`;
+        }).join("")}
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td class="rowBand sticky colName" colspan="${3+dim}">ME</td>
+      </tr>
+      ${renderPersonRow("me", meIdx, y, m, dim, baseMe, reqMe)}
+      <tr>
+        <td class="rowBand sticky colName" colspan="${3+dim}">THEM</td>
+      </tr>
+      ${renderPersonRow("them", thIdx, y, m, dim, baseTh, reqTh)}
+    </tbody>
+  </table>`;
+
+  elTableHost.innerHTML = html;
+}
+
+function renderPersonRow(side, personIdx, y, m, dim, baseMap, reqMap){
+  const p = EMPLOYEES[personIdx];
+  let row = `<tr class="dataRow">
+    <td class="nameCell sticky colName">${p.name}</td>
+    <td class="shiftCell sticky2 colShift">${p.shift || ""}</td>
+    <td class="slotCell sticky3 colSlot">${p.slot}</td>
+  `;
+
+  for(let d=1; d<=dim; d++){
+    const iso = isoDate(y,m,d);
+    const code = norm(reqMap.get(iso));
+    const base = norm(baseMap.get(iso));
+
+    const picked = (pick && pick.side===side && pick.iso===iso) ? "pick" : "";
+    const changed = (code !== base) ? "changed" : "";
+
+    row += `<td class="${picked} ${changed}" data-side="${side}" data-iso="${iso}">
+      <div class="code ${codeClass(code)}">${code}</div>
+    </td>`;
+  }
+
+  row += `</tr>`;
+  return row;
+}
+
+/* ===========================
+   SWAP
+   =========================== */
+function doSwap(isoMe, isoThem){
+  const [y,m] = elMonthPick.value.split("-").map(Number);
+
+  const meIdx = Number(elMe.value);
+  const thIdx = Number(elThem.value);
+
+  const baseObj = loadBaseline();
+  const swapsObj = loadSwaps();
+
+  const baseMe = buildBaseMap(meIdx, y, m, baseObj.arr);
+  const baseTh = buildBaseMap(thIdx, y, m, baseObj.arr);
   const reqMe = applyOverrides(meIdx, baseMe, swapsObj);
   const reqTh = applyOverrides(thIdx, baseTh, swapsObj);
 
   const a = norm(reqMe.get(isoMe));
   const b = norm(reqTh.get(isoThem));
 
+  // swap codes between those 2 cells
   setOverride(swapsObj, meIdx, isoMe, b);
   setOverride(swapsObj, thIdx, isoThem, a);
 
+  // clean overrides if same as baseline
   if(norm(b) === norm(baseMe.get(isoMe))) clearOverride(swapsObj, meIdx, isoMe);
   if(norm(a) === norm(baseTh.get(isoThem))) clearOverride(swapsObj, thIdx, isoThem);
 
   saveSwaps(swapsObj);
 }
 
-function lockBaselineJanToMar(){
-  // locks whatever baseline is currently loaded
-  const b = loadBaseline().arr;
-  saveBaseline(b);
-}
-
+/* ===========================
+   FORM PRINT (simple placeholder)
+   NOTE: Generates a printable form in a new window.
+   =========================== */
 function openFormPrint(){
+  const [y,m] = elMonthPick.value.split("-").map(Number);
+  const dim = daysInMonth(y,m);
+
   const meIdx = Number(elMe.value);
   const thIdx = Number(elThem.value);
   const me = EMPLOYEES[meIdx];
   const th = EMPLOYEES[thIdx];
 
-  const baseline = loadBaseline().arr;
-  const months = getMonthsWindow();
+  const baseObj = loadBaseline();
   const swapsObj = loadSwaps();
 
-  const month = months[0];
-  const {y,m} = month;
-  const dim = daysInMonth(y,m);
-
-  const baseMe = buildBaseScheduleForPerson(meIdx, months, baseline);
+  const baseMe = buildBaseMap(meIdx, y, m, baseObj.arr);
   const reqMe = applyOverrides(meIdx, baseMe, swapsObj);
 
-  function gridLine(map, maxDay){
+  function gridLine(map){
     let out = "";
     for(let d=1; d<=31; d++){
       const iso = isoDate(y,m,d);
-      const code = (d<=maxDay) ? (map.get(iso) || "") : "";
-      out += `<div class="cell">${d}<span>${code}</span></div>`;
+      const code = (d<=dim) ? (norm(map.get(iso))||"") : "";
+      out += `<div class="cell"><div class="n">${d}</div><div class="c">${code}</div></div>`;
     }
     return out;
   }
@@ -687,50 +727,44 @@ function openFormPrint(){
   const w = window.open("", "_blank");
   w.document.write(`
     <html><head><title>Swap Form</title>
-      <style>
-        @page{ size: letter; margin: 0.4in; }
-        body{ font-family: Arial; }
-        .wrap{ position:relative; width:100%; height:10.3in; }
-        .rightTitle{
-          position:absolute; right:-1.75in; top:2.2in;
-          transform: rotate(90deg);
-          font-weight:900; letter-spacing:1px; font-size:20px;
-        }
-        .rightNote{
-          position:absolute; right:-1.65in; top:0.9in;
-          transform: rotate(90deg);
-          color:#b10014; font-weight:900; font-size:12px;
-        }
-        .leftNote{
-          position:absolute; left:-1.35in; top:0.9in;
-          transform: rotate(-90deg);
-          color:#b10014; font-weight:900; font-size:12px;
-        }
-        .topFields{ margin-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
-        .field{ font-size:12px; font-weight:900; }
-        .line{ border-bottom:2px solid #222; height:18px; }
-        .section{ margin-top:18px; display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
-        .gridTitle{ font-weight:900; text-align:center; margin-bottom:6px; }
-        .grid{
-          display:grid; grid-template-columns: repeat(31, 1fr);
-          border:2px solid #222;
-        }
-        .cell{
-          border-right:1px solid #222;
-          border-bottom:1px solid #222;
-          height:26px; position:relative;
-          font-size:10px; font-weight:900;
-          display:flex; align-items:flex-start; justify-content:flex-start;
-          padding:2px 2px;
-        }
-        .cell span{
-          position:absolute; inset:0;
-          display:flex; align-items:center; justify-content:center;
-          font-size:11px; font-weight:900;
-        }
-        .bottom{ position:absolute; bottom:0.35in; left:0; right:0; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:18px; }
-        .dateTop{ position:absolute; right:0; top:0; font-weight:900; font-size:12px; }
-      </style>
+    <style>
+      @page{ size: letter; margin: 0.45in; }
+      body{ font-family: Arial; }
+      .wrap{ position:relative; width:100%; height:10.2in; }
+      .rightTitle{
+        position:absolute; right:-1.75in; top:2.2in;
+        transform: rotate(90deg);
+        font-weight:900; letter-spacing:1px; font-size:20px;
+      }
+      .rightNote{
+        position:absolute; right:-1.65in; top:0.9in;
+        transform: rotate(90deg);
+        color:#b10014; font-weight:900; font-size:12px;
+      }
+      .leftNote{
+        position:absolute; left:-1.35in; top:0.9in;
+        transform: rotate(-90deg);
+        color:#b10014; font-weight:900; font-size:12px;
+      }
+      .dateTop{ position:absolute; right:0; top:0; font-weight:900; font-size:12px; }
+      .topFields{ margin-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+      .field{ font-size:12px; font-weight:900; }
+      .line{ border-bottom:2px solid #222; height:18px; }
+      .section{ margin-top:18px; display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+      .gridTitle{ font-weight:900; text-align:center; margin-bottom:6px; }
+      .grid{
+        display:grid; grid-template-columns: repeat(31, 1fr);
+        border:2px solid #222;
+      }
+      .cell{
+        border-right:1px solid #222;
+        border-bottom:1px solid #222;
+        height:26px; position:relative;
+      }
+      .cell .n{ position:absolute; top:2px; left:3px; font-size:10px; font-weight:900; }
+      .cell .c{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; }
+      .bottom{ position:absolute; bottom:0.35in; left:0; right:0; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:18px; }
+    </style>
     </head><body>
       <div class="wrap">
         <div class="dateTop">DATE: ${dateStr}</div>
@@ -749,13 +783,13 @@ function openFormPrint(){
           <div>
             <div class="field">NAME<div class="line">${me.name}</div></div>
             <div class="gridTitle">MY PRESENT SCHEDULE IS</div>
-            <div class="grid">${gridLine(baseMe, dim)}</div>
+            <div class="grid">${gridLine(baseMe)}</div>
           </div>
 
           <div>
             <div class="field">NAME<div class="line">${me.name} (swap with: ${th.name})</div></div>
             <div class="gridTitle">TIME OFF OR CHANGE PERIOD REQUESTED</div>
-            <div class="grid">${gridLine(reqMe, dim)}</div>
+            <div class="grid">${gridLine(reqMe)}</div>
           </div>
         </div>
 
@@ -771,85 +805,49 @@ function openFormPrint(){
   w.document.close();
 }
 
-function render(){
-  const months = getMonthsWindow();
-  const mode = elMode.value;
-
-  const baselineObj = loadBaseline();
-  const baseline = baselineObj.arr;
-
-  pillMode.textContent = `MODE: ${mode.toUpperCase()}`;
-  pillBase.textContent = `BASELINE: ${baselineObj.locked ? "LOCKED" : "NOT LOCKED"}`;
-  pillBase.className = "pill " + (baselineObj.locked ? "ok" : "bad");
-
-  const meIdx = Number(elMe.value);
-  const thIdx = Number(elThem.value);
-
-  leftTitle.textContent = `ME — ${EMPLOYEES[meIdx].name} (Slot ${EMPLOYEES[meIdx].slot})`;
-  rightTitle.textContent = `THEM — ${EMPLOYEES[thIdx].name} (Slot ${EMPLOYEES[thIdx].slot})`;
-
-  leftHint.textContent = (mode==="swap")
-    ? "Swap mode: click a day on ME then a day on THEM to swap codes."
-    : "View mode: shows baseline + saved swaps.";
-
-  rightHint.textContent = (mode==="swap")
-    ? "Swap mode: click a day on THEM after you pick one on ME."
-    : "View mode: shows baseline + saved swaps.";
-
-  const swapsObj = loadSwaps();
-
-  const baseMe = buildBaseScheduleForPerson(meIdx, months, baseline);
-  const baseTh = buildBaseScheduleForPerson(thIdx, months, baseline);
-
-  const reqMe = applyOverrides(meIdx, baseMe, swapsObj);
-  const reqTh = applyOverrides(thIdx, baseTh, swapsObj);
-
-  elLeftMonths.innerHTML = months.map(mm => renderMonth(meIdx, mm, baseMe, reqMe, "me")).join("");
-  elRightMonths.innerHTML = months.map(mm => renderMonth(thIdx, mm, baseTh, reqTh, "them")).join("");
-
-  const errs = [
-    ...validatePerson(meIdx, months, reqMe),
-    ...validatePerson(thIdx, months, reqTh),
-  ];
-
-  if(errs.length === 0){
-    pillValid.textContent = "VALIDATION: OK";
-    pillValid.className = "pill ok";
-    elErrors.style.display="none";
-    elErrors.textContent="";
-  }else{
-    pillValid.textContent = `VALIDATION: ${errs.length} ISSUE(S)`;
-    pillValid.className = "pill bad";
-    elErrors.style.display="block";
-    elErrors.textContent = errs.map(e=>"• "+e).join("\n");
-  }
-}
-
-document.getElementById("prev").addEventListener("click", ()=>{ pageOffset = Math.max(0, pageOffset-1); pick=null; render(); });
-document.getElementById("next").addEventListener("click", ()=>{ pageOffset = pageOffset+1; pick=null; render(); });
+/* ===========================
+   EVENTS
+   =========================== */
+document.getElementById("prev").addEventListener("click", ()=>{
+  const [y,m] = elMonthPick.value.split("-").map(Number);
+  const dt = new Date(y, m-2, 1);
+  elMonthPick.value = `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}`;
+  pick=null;
+  render();
+});
+document.getElementById("next").addEventListener("click", ()=>{
+  const [y,m] = elMonthPick.value.split("-").map(Number);
+  const dt = new Date(y, m, 1);
+  elMonthPick.value = `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}`;
+  pick=null;
+  render();
+});
 document.getElementById("thisMonth").addEventListener("click", ()=>{
   const now = new Date();
-  elStartMonth.value = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
-  pageOffset = 0; pick=null; render();
+  elMonthPick.value = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
+  pick=null;
+  render();
 });
 
 document.getElementById("resetSwaps").addEventListener("click", ()=>{ resetSwaps(); pick=null; render(); });
-document.getElementById("lockBaseline").addEventListener("click", ()=>{ lockBaselineJanToMar(); pick=null; render(); });
+document.getElementById("lockBaseline").addEventListener("click", ()=>{
+  const b = loadBaseline().arr;
+  saveBaseline(b);
+  pick=null;
+  render();
+});
 document.getElementById("resetBaseline").addEventListener("click", ()=>{ resetBaseline(); pick=null; render(); });
-document.getElementById("exportForm").addEventListener("click", ()=>{ openFormPrint(); });
+document.getElementById("generateForm").addEventListener("click", ()=>{ openFormPrint(); });
 
-elStartMonth.addEventListener("change", ()=>{ pageOffset=0; pick=null; render(); });
-elMonthsShown.addEventListener("change", ()=>{ pageOffset=0; pick=null; render(); });
-elMode.addEventListener("change", ()=>{ pick=null; render(); });
+elMonthPick.addEventListener("change", ()=>{ pick=null; render(); });
 elMe.addEventListener("change", ()=>{ pick=null; render(); });
 elThem.addEventListener("change", ()=>{ pick=null; render(); });
+elSwapMode.addEventListener("change", ()=>{ pick=null; render(); });
 
 document.addEventListener("click", (e)=>{
-  const td = e.target.closest("td.cell");
+  const td = e.target.closest("td[data-side][data-iso]");
   if(!td) return;
-
-  const mode = elMode.value;
-  if(mode !== "swap") return;
+  if(elSwapMode.value !== "on") return;
 
   const side = td.getAttribute("data-side");
   const iso = td.getAttribute("data-iso");
@@ -859,12 +857,14 @@ document.addEventListener("click", (e)=>{
     render();
     return;
   }
+  // clicking same side replaces selection
   if(pick.side === side){
     pick = { side, iso };
     render();
     return;
   }
 
+  // swap between the 2 selected cells
   const isoMe = (pick.side==="me") ? pick.iso : iso;
   const isoTh = (pick.side==="them") ? pick.iso : iso;
 
@@ -873,10 +873,13 @@ document.addEventListener("click", (e)=>{
   render();
 });
 
+/* ===========================
+   BOOT
+   =========================== */
 (function boot(){
   initSelectors();
   const now = new Date();
-  elStartMonth.value = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
+  elMonthPick.value = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
   render();
 })();
 </script>
