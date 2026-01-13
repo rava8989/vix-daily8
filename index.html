@@ -128,10 +128,12 @@ td.hol{
   font-weight:1000;
 }
 
-/* SELECTED ROW (overrides everything) */
-tr.selected td,
+/* SELECTED ROW (overrides striping + weekend colors) */
+tr.selected td.wkCol,
+tr.selected td.satCol,
+tr.selected td.sunCol,
 tr.selected td.name{
-  background:var(--select) !important;
+  background: var(--select) !important;
   color:#000 !important;
 }
 
@@ -312,3 +314,4 @@ render();
 </script>
 </body>
 </html>
+
