@@ -3,44 +3,35 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Pure Schedule – 2026 (Final)</title>
+<title>Pure Schedule – 2026 (Holiday Logic + Row Highlight)</title>
 
 <style>
 :root{
   --grid:#6a6a6a;
 
-  --hdr9:#1a1a1a;
-  --sun7:#4d4d4d;
-  --sat5:#7a7a7a;
-  --wk:#f6f6f6;
+  --hdr9:#1a1a1a;   /* header rows */
+  --sun7:#4d4d4d;   /* Sunday column */
+  --sat5:#7a7a7a;   /* Saturday column */
+  --wk:#f6f6f6;     /* weekday base */
 
   --row2:#e6e6e6;
   --row1:#f0f0f0;
 
   --holiday:#b30000;
-  --select:#fff3a0; /* yellow highlight */
+  --select:#fff3a0; /* yellow row highlight */
 }
 
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-  background:#fff;
-}
+body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#fff; }
 
 header{
-  position:sticky;
-  top:0;
-  z-index:20;
+  position:sticky; top:0; z-index:20;
   background:#fff;
   border-bottom:2px solid var(--grid);
   padding:8px;
 }
 
 .controls{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  align-items:center;
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
 }
 
 select,input,button{
@@ -50,7 +41,6 @@ select,input,button{
   border-radius:8px;
   background:#fff;
 }
-
 button{ cursor:pointer }
 
 .wrap{ padding:8px; }
@@ -71,10 +61,7 @@ button{ cursor:pointer }
   font-size:14px;
 }
 
-.scroll{
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-}
+.scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
 
 table{
   border-collapse:collapse;
@@ -110,23 +97,21 @@ th.name, td.name{
 .satCol{ background:var(--sat5) !important; color:#111; }
 .sunCol{ background:var(--sun7) !important; color:#fff; }
 
-/* row striping (weekday only) */
+/* row striping – weekday cells only */
 tr.r2 td.wkCol{ background:var(--row2) !important; }
 tr.r1 td.wkCol{ background:var(--row1) !important; }
 tr.r2 td.name{ background:var(--row2) !important; }
 tr.r1 td.name{ background:var(--row1) !important; }
 
-/* header rows */
+/* header rows override weekend colors */
 tr.hdrRow th{
   background:var(--hdr9) !important;
   color:#fff !important;
 }
+tr.hdrRow th.name{ background:var(--hdr9) !important; }
 
-/* HOL */
-td.hol{
-  color:var(--holiday) !important;
-  font-weight:1000;
-}
+/* HOL (off day) */
+td.hol{ color:var(--holiday) !important; font-weight:1000; }
 
 /* SELECTED ROW (overrides striping + weekend colors) */
 tr.selected td.wkCol,
@@ -193,81 +178,325 @@ const PEOPLE=[
 
 /* ===== FINAL HOLIDAYS – 2026 ===== */
 const HOLIDAYS_2026 = new Set([
-  "2026-01-01","2026-01-19","2026-02-16","2026-05-25","2026-06-19",
-  "2026-07-03","2026-07-06","2026-09-07","2026-10-12",
-  "2026-11-11","2026-11-26","2026-11-27","2026-12-25"
+  "2026-01-01",
+  "2026-01-19",
+  "2026-02-16",
+  "2026-05-25",
+  "2026-06-19",
+  "2026-07-03",
+  "2026-07-06",
+  "2026-09-07",
+  "2026-10-12",
+  "2026-11-11",
+  "2026-11-26",
+  "2026-11-27",
+  "2026-12-25"
 ]);
 
-/* ================= UTC UTIL ================= */
+/* ================= UTC DATE UTIL (NO TIMEZONE SHIFT) ================= */
 
 const pad=n=>String(n).padStart(2,"0");
-const makeUTC=(y,m,d)=>new Date(Date.UTC(y,m,d));
-const isoUTC=d=>`${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
-const addDays=(d,n)=>new Date(d.getTime()+n*86400000);
-const dow=d=>d.getUTCDay();
-const idx=i=>((i%LOOP)+LOOP)%LOOP;
+function makeUTC(y,m,d){ return new Date(Date.UTC(y,m,d)); }
+function isoUTC(d){ return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`; }
+function addDaysUTC(d,n){ return new Date(d.getTime()+n*86400000); }
+function dowUTC(d){ return d.getUTCDay(); } // 0 Sun..6 Sat
+function idx(i){ return ((i%LOOP)+LOOP)%LOOP; }
 
-const ANCHOR = Date.UTC(2026,0,1);
+/* Anchor schedule starts Jan 1, 2026 */
+const ANCHOR_UTC_MS = Date.UTC(2026,0,1);
 
-const baseCode=(slot,d)=>{
-  const di=Math.floor((d.getTime()-ANCHOR)/86400000);
+function baseCode(slot, dateUTC){
+  const di = Math.floor((dateUTC.getTime() - ANCHOR_UTC_MS) / 86400000);
   return SLOTS[slot][idx(di)];
-};
+}
+
+function isWeekendUTC(d){ const w=dowUTC(d); return w===0 || w===6; }
+function isWeekdayUTC(d){ const w=dowUTC(d); return w>=1 && w<=5; }
+function isDouble(code){ return String(code).includes("/"); }
+function isACWork(code){ return code==="A" || code==="C" || isDouble(code); }
+function isOff(code){ return code==="RDO" || code==="MDO"; }
+function isReserve(code){ return code==="R"; }
+
+function colClassForDow(w){ return w===0?"sunCol":w===6?"satCol":"wkCol"; }
+
+/* contiguous B-run includes weekend? */
+function bRunIncludesWeekend(dateUTC, baseMap){
+  const di = isoUTC(dateUTC);
+  if(baseMap.get(di) !== "B") return false;
+
+  let s = dateUTC;
+  for(let i=0;i<14;i++){
+    const p = addDaysUTC(s, -1);
+    if(baseMap.get(isoUTC(p)) !== "B") break;
+    s = p;
+  }
+  let e = dateUTC;
+  for(let i=0;i<14;i++){
+    const n = addDaysUTC(e, 1);
+    if(baseMap.get(isoUTC(n)) !== "B") break;
+    e = n;
+  }
+  for(let cur=s; cur.getTime()<=e.getTime(); cur=addDaysUTC(cur,1)){
+    const w = dowUTC(cur);
+    if(w===0 || w===6) return true;
+  }
+  return false;
+}
+
+/* ================= HOLIDAY LOGIC (RESTORED) =================
+- R never works holiday -> HOL on holiday date
+- A/C/doubles work holiday -> credit later
+- RDO/MDO on holiday -> credit later
+- B on holiday:
+    * weekend holiday: base-B covers (whoever is base B)
+    * weekday holiday: pick 2 B workers:
+        - Mon/Tue/Thu/Fri -> Thu–Tue group (B run includes weekend)
+        - Wed -> Mon–Fri group (B run does NOT include weekend)
+      workers KEEP "B" shown that day + get credit later
+      other B’s get HOL that day
+- credits placed on first WEEKDAY base-B after holiday
+- credits NEVER placed onto a holiday date
+*/
+function computeDisplay(rangeStartUTC, rangeEndUTC){
+  const baseMapByPerson = new Map();
+  for(const p of PEOPLE){
+    const m=new Map();
+    for(let d=rangeStartUTC; d.getTime()<=rangeEndUTC.getTime(); d=addDaysUTC(d,1)){
+      m.set(isoUTC(d), baseCode(p.s, d));
+    }
+    baseMapByPerson.set(p.n, m);
+  }
+
+  const holOnDate = new Map();
+  const credits   = new Map();
+  for(const p of PEOPLE){
+    holOnDate.set(p.n, new Set());
+    credits.set(p.n, 0);
+  }
+
+  function placeCredit(name, fromISO){
+    const baseM = baseMapByPerson.get(name);
+    const holS  = holOnDate.get(name);
+
+    let d = addDaysUTC(new Date(fromISO+"T00:00:00Z"), 1);
+    for(let i=0;i<240;i++){
+      const di=isoUTC(d);
+      const code=baseM.get(di)||"";
+      if(HOLIDAYS_2026.has(di)) { d = addDaysUTC(d,1); continue; } // never place on a holiday date
+      if(isWeekdayUTC(d) && code==="B" && !holS.has(di)){
+        holS.add(di);
+        return true;
+      }
+      d = addDaysUTC(d,1);
+    }
+    return false;
+  }
+
+  function pickBWorkers(holidayDateUTC){
+    const hISO = isoUTC(holidayDateUTC);
+    const dow = dowUTC(holidayDateUTC);
+    const candidates = PEOPLE.filter(p => baseMapByPerson.get(p.n).get(hISO)==="B");
+
+    if(isWeekendUTC(holidayDateUTC)){
+      return new Set(candidates.map(p=>p.n));
+    }
+
+    const wantWeekendGroup = (dow===1 || dow===2 || dow===4 || dow===5); // Mon Tue Thu Fri
+    const wantWeekGroup    = (dow===3); // Wed
+
+    const match=[], other=[];
+    for(const p of candidates){
+      const incWeekend = bRunIncludesWeekend(holidayDateUTC, baseMapByPerson.get(p.n));
+      if(wantWeekGroup){
+        (incWeekend ? other : match).push(p); // Wed prefers Mon–Fri group (no weekend)
+      } else if(wantWeekendGroup){
+        (incWeekend ? match : other).push(p); // Mon/Tue/Thu/Fri prefers Thu–Tue group (includes weekend)
+      } else {
+        match.push(p);
+      }
+    }
+
+    const sort = arr => arr.slice().sort((a,b)=> (a.s-b.s) || a.n.localeCompare(b.n));
+    const pick=[];
+    for(const p of sort(match)) if(pick.length<2) pick.push(p);
+    for(const p of sort(other)) if(pick.length<2) pick.push(p);
+    if(pick.length<2){
+      for(const p of sort(candidates)){
+        if(pick.some(x=>x.n===p.n)) continue;
+        pick.push(p);
+        if(pick.length===2) break;
+      }
+    }
+    return new Set(pick.map(p=>p.n));
+  }
+
+  // holiday list in range
+  const holidayISOs=[];
+  for(let d=rangeStartUTC; d.getTime()<=rangeEndUTC.getTime(); d=addDaysUTC(d,1)){
+    const di=isoUTC(d);
+    if(HOLIDAYS_2026.has(di)) holidayISOs.push(di);
+  }
+
+  for(const hISO of holidayISOs){
+    const hDateUTC = new Date(hISO+"T00:00:00Z");
+    const bWorkers = pickBWorkers(hDateUTC);
+
+    for(const p of PEOPLE){
+      const code = baseMapByPerson.get(p.n).get(hISO) || "";
+
+      if(isReserve(code)){
+        holOnDate.get(p.n).add(hISO);      // R never works holiday
+        continue;
+      }
+      if(isOff(code)){
+        credits.set(p.n, credits.get(p.n)+1);
+        continue;
+      }
+      if(isACWork(code)){
+        credits.set(p.n, credits.get(p.n)+1);
+        continue;
+      }
+      if(code==="B"){
+        if(bWorkers.has(p.n)){
+          credits.set(p.n, credits.get(p.n)+1); // works holiday
+        } else {
+          holOnDate.get(p.n).add(hISO);         // off holiday
+        }
+        continue;
+      }
+      credits.set(p.n, credits.get(p.n)+1);
+    }
+
+    // place credits after this holiday
+    for(const p of PEOPLE){
+      let c = credits.get(p.n);
+      while(c>0){
+        const placed = placeCredit(p.n, hISO);
+        if(!placed) break;
+        c--;
+      }
+      credits.set(p.n, c);
+    }
+  }
+
+  // display maps
+  const displayByPerson = new Map();
+  for(const p of PEOPLE){
+    const baseM = baseMapByPerson.get(p.n);
+    const holS  = holOnDate.get(p.n);
+    const disp  = new Map();
+    for(let d=rangeStartUTC; d.getTime()<=rangeEndUTC.getTime(); d=addDaysUTC(d,1)){
+      const di=isoUTC(d);
+      disp.set(di, holS.has(di) ? "HOL" : (baseM.get(di)||""));
+    }
+    displayByPerson.set(p.n, disp);
+  }
+
+  return { baseMapByPerson, displayByPerson };
+}
 
 /* ================= RENDER ================= */
 
 const wrap=document.getElementById("wrap");
 const startMonthEl=document.getElementById("startMonth");
 
-const currentMonthUTC=()=>{
-  const n=new Date();
-  return makeUTC(n.getUTCFullYear(),n.getUTCMonth(),1);
-};
+function currentMonthUTC(){
+  const now = new Date();
+  return makeUTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+}
 
-let startUTC=currentMonthUTC();
+let startUTC = currentMonthUTC(); // ALWAYS start from current month
+
+function setMonthInput(){
+  startMonthEl.value = `${startUTC.getUTCFullYear()}-${pad(startUTC.getUTCMonth()+1)}`;
+}
+
+function enableRowSelection(){
+  document.querySelectorAll("td.name").forEach(cell=>{
+    cell.onclick=()=>{
+      document.querySelectorAll("tr.selected").forEach(r=>r.classList.remove("selected"));
+      cell.closest("tr").classList.add("selected");
+    };
+  });
+}
 
 function render(){
   wrap.innerHTML="";
   const months=+document.getElementById("showMonths").value;
 
+  const rangeStartUTC = makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth(), 1);
+  const rangeEndUTC   = addDaysUTC(makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth()+12, 1), 240);
+
+  const computed = computeDisplay(rangeStartUTC, rangeEndUTC);
+
   for(let i=0;i<months;i++){
-    const mUTC=makeUTC(startUTC.getUTCFullYear(),startUTC.getUTCMonth()+i,1);
-    const y=mUTC.getUTCFullYear(), m=mUTC.getUTCMonth();
-    const days=makeUTC(y,m+1,0).getUTCDate();
+    const monthUTC = makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth()+i, 1);
+    const y = monthUTC.getUTCFullYear();
+    const m = monthUTC.getUTCMonth();
+    const daysInMonth = makeUTC(y, m+1, 0).getUTCDate();
 
     const panel=document.createElement("div");
     panel.className="panel";
-    panel.innerHTML=`<div class="monthHeader">${mUTC.toLocaleString("default",{month:"long",timeZone:"UTC"})} ${y}</div>`;
+
+    const header=document.createElement("div");
+    header.className="monthHeader";
+    header.textContent = `${monthUTC.toLocaleString("default",{month:"long", timeZone:"UTC"})} ${y}`;
+    panel.appendChild(header);
 
     const sc=document.createElement("div");
     sc.className="scroll";
+
     const t=document.createElement("table");
 
+    // day numbers
     let tr=document.createElement("tr");
     tr.className="hdrRow";
-    tr.innerHTML=`<th class="name">NAME</th>`;
-    for(let d=1;d<=days;d++) tr.innerHTML+=`<th>${d}</th>`;
+    tr.innerHTML = `<th class="name">NAME</th>`;
+    for(let day=1; day<=daysInMonth; day++){
+      tr.innerHTML += `<th>${day}</th>`;
+    }
     t.appendChild(tr);
 
+    // day-of-week row
     tr=document.createElement("tr");
     tr.className="hdrRow";
-    tr.innerHTML=`<th class="name"></th>`;
+    tr.innerHTML = `<th class="name"></th>`;
     const dows=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-    for(let d=1;d<=days;d++) tr.innerHTML+=`<th>${dows[dow(makeUTC(y,m,d))]}</th>`;
+    for(let day=1; day<=daysInMonth; day++){
+      const dt = makeUTC(y,m,day);
+      tr.innerHTML += `<th>${dows[dowUTC(dt)]}</th>`;
+    }
     t.appendChild(tr);
 
-    PEOPLE.forEach((p,i)=>{
+    // people rows
+    PEOPLE.forEach((ppl, i)=>{
       const r=document.createElement("tr");
-      r.className=i%2?"r1":"r2";
-      r.innerHTML=`<td class="name">${p.n}</td>`;
-      for(let d=1;d<=days;d++){
-        const dt=makeUTC(y,m,d);
+      r.className = (i%2===0) ? "r2" : "r1";
+      r.innerHTML = `<td class="name">${ppl.n}</td>`;
+
+      const dispM = computed.displayByPerson.get(ppl.n);
+      const baseM = computed.baseMapByPerson.get(ppl.n);
+
+      for(let day=1; day<=daysInMonth; day++){
+        const dt = makeUTC(y,m,day);
+        const di = isoUTC(dt);
+
         const td=document.createElement("td");
-        const w=dow(dt);
-        td.className=w===0?"sunCol":w===6?"satCol":"wkCol";
-        td.textContent=baseCode(p.s,dt);
+        td.className = colClassForDow(dowUTC(dt));
+
+        const base = baseM.get(di) || "";
+        const display = dispM.get(di) || base;
+
+        if(display==="HOL"){
+          td.classList.add("hol");
+          td.textContent="HOL";
+        } else {
+          td.textContent=base; // show the actual tour (B stays B for workers on holiday)
+        }
+
         r.appendChild(td);
       }
+
       t.appendChild(r);
     });
 
@@ -279,39 +508,38 @@ function render(){
   enableRowSelection();
 }
 
-/* ===== ROW SELECTION ===== */
-function enableRowSelection(){
-  document.querySelectorAll("td.name").forEach(cell=>{
-    cell.onclick=()=>{
-      document.querySelectorAll("tr.selected")
-        .forEach(r=>r.classList.remove("selected"));
-      cell.closest("tr").classList.add("selected");
-    };
-  });
-}
+/* ================= CONTROLS ================= */
 
-/* ===== CONTROLS ===== */
-document.getElementById("prev").onclick=()=>{
-  startUTC=makeUTC(startUTC.getUTCFullYear(),startUTC.getUTCMonth()-1,1);
-  render();
-};
-document.getElementById("next").onclick=()=>{
-  startUTC=makeUTC(startUTC.getUTCFullYear(),startUTC.getUTCMonth()+1,1);
-  render();
-};
-document.getElementById("today").onclick=()=>{
-  startUTC=currentMonthUTC();
-  render();
-};
-startMonthEl.onchange=e=>{
-  const [yy,mm]=e.target.value.split("-").map(Number);
-  startUTC=makeUTC(yy,mm-1,1);
-  render();
-};
+document.getElementById("showMonths").addEventListener("change", ()=>{ setMonthInput(); render(); });
 
-startMonthEl.value=`${startUTC.getUTCFullYear()}-${pad(startUTC.getUTCMonth()+1)}`;
+document.getElementById("prev").addEventListener("click", ()=>{
+  startUTC = makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth()-1, 1);
+  setMonthInput();
+  render();
+});
+
+document.getElementById("next").addEventListener("click", ()=>{
+  startUTC = makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth()+1, 1);
+  setMonthInput();
+  render();
+});
+
+document.getElementById("today").addEventListener("click", ()=>{
+  startUTC = currentMonthUTC();
+  setMonthInput();
+  render();
+});
+
+startMonthEl.addEventListener("change", (e)=>{
+  const [yy,mm] = e.target.value.split("-").map(Number);
+  startUTC = makeUTC(yy, mm-1, 1);
+  setMonthInput();
+  render();
+});
+
+/* init */
+setMonthInput();
 render();
 </script>
 </body>
 </html>
-
