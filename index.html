@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Pure Schedule – 2026 (Holiday Logic + Row Highlight)</title>
+<title>Pure Schedule – 2026 (HOL Fix + Visible Holidays)</title>
 
 <style>
 :root{
@@ -103,15 +103,22 @@ tr.r1 td.wkCol{ background:var(--row1) !important; }
 tr.r2 td.name{ background:var(--row2) !important; }
 tr.r1 td.name{ background:var(--row1) !important; }
 
-/* header rows override weekend colors */
+/* header rows */
 tr.hdrRow th{
   background:var(--hdr9) !important;
   color:#fff !important;
 }
 tr.hdrRow th.name{ background:var(--hdr9) !important; }
 
-/* HOL (off day) */
+/* HOL cell */
 td.hol{ color:var(--holiday) !important; font-weight:1000; }
+
+/* header HOL marker */
+th.holHead{
+  color: var(--holiday) !important;
+  background: var(--hdr9) !important;
+  font-weight:1000;
+}
 
 /* SELECTED ROW (overrides striping + weekend colors) */
 tr.selected td.wkCol,
@@ -120,6 +127,10 @@ tr.selected td.sunCol,
 tr.selected td.name{
   background: var(--select) !important;
   color:#000 !important;
+}
+/* keep HOL red even when selected */
+tr.selected td.hol{
+  color: var(--holiday) !important;
 }
 
 @media (max-width:700px){
@@ -193,7 +204,7 @@ const HOLIDAYS_2026 = new Set([
   "2026-12-25"
 ]);
 
-/* ================= UTC DATE UTIL (NO TIMEZONE SHIFT) ================= */
+/* ================= UTC UTIL (NO TIMEZONE SHIFT) ================= */
 
 const pad=n=>String(n).padStart(2,"0");
 function makeUTC(y,m,d){ return new Date(Date.UTC(y,m,d)); }
@@ -202,7 +213,6 @@ function addDaysUTC(d,n){ return new Date(d.getTime()+n*86400000); }
 function dowUTC(d){ return d.getUTCDay(); } // 0 Sun..6 Sat
 function idx(i){ return ((i%LOOP)+LOOP)%LOOP; }
 
-/* Anchor schedule starts Jan 1, 2026 */
 const ANCHOR_UTC_MS = Date.UTC(2026,0,1);
 
 function baseCode(slot, dateUTC){
@@ -243,19 +253,11 @@ function bRunIncludesWeekend(dateUTC, baseMap){
   return false;
 }
 
-/* ================= HOLIDAY LOGIC (RESTORED) =================
-- R never works holiday -> HOL on holiday date
-- A/C/doubles work holiday -> credit later
-- RDO/MDO on holiday -> credit later
-- B on holiday:
-    * weekend holiday: base-B covers (whoever is base B)
-    * weekday holiday: pick 2 B workers:
-        - Mon/Tue/Thu/Fri -> Thu–Tue group (B run includes weekend)
-        - Wed -> Mon–Fri group (B run does NOT include weekend)
-      workers KEEP "B" shown that day + get credit later
-      other B’s get HOL that day
-- credits placed on first WEEKDAY base-B after holiday
-- credits NEVER placed onto a holiday date
+/* ================= HOLIDAY LOGIC =================
+We ALWAYS show holidays in the HEADER (HOL markers).
+For PEOPLE cells:
+- "HOL" shows when the person is OFF (or credited HOL day)
+- If they WORK the holiday, the cell stays A/B/C/etc and they get credit later.
 */
 function computeDisplay(rangeStartUTC, rangeEndUTC){
   const baseMapByPerson = new Map();
@@ -279,7 +281,7 @@ function computeDisplay(rangeStartUTC, rangeEndUTC){
     const holS  = holOnDate.get(name);
 
     let d = addDaysUTC(new Date(fromISO+"T00:00:00Z"), 1);
-    for(let i=0;i<240;i++){
+    for(let i=0;i<260;i++){
       const di=isoUTC(d);
       const code=baseM.get(di)||"";
       if(HOLIDAYS_2026.has(di)) { d = addDaysUTC(d,1); continue; } // never place on a holiday date
@@ -298,19 +300,19 @@ function computeDisplay(rangeStartUTC, rangeEndUTC){
     const candidates = PEOPLE.filter(p => baseMapByPerson.get(p.n).get(hISO)==="B");
 
     if(isWeekendUTC(holidayDateUTC)){
-      return new Set(candidates.map(p=>p.n));
+      return new Set(candidates.map(p=>p.n)); // weekend holiday: base-B covers
     }
 
-    const wantWeekendGroup = (dow===1 || dow===2 || dow===4 || dow===5); // Mon Tue Thu Fri
-    const wantWeekGroup    = (dow===3); // Wed
+    const wantWeekendGroup = (dow===1 || dow===2 || dow===4 || dow===5); // Mon Tue Thu Fri -> Thu–Tue group
+    const wantWeekGroup    = (dow===3); // Wed -> Mon–Fri group
 
     const match=[], other=[];
     for(const p of candidates){
       const incWeekend = bRunIncludesWeekend(holidayDateUTC, baseMapByPerson.get(p.n));
       if(wantWeekGroup){
-        (incWeekend ? other : match).push(p); // Wed prefers Mon–Fri group (no weekend)
+        (incWeekend ? other : match).push(p);
       } else if(wantWeekendGroup){
-        (incWeekend ? match : other).push(p); // Mon/Tue/Thu/Fri prefers Thu–Tue group (includes weekend)
+        (incWeekend ? match : other).push(p);
       } else {
         match.push(p);
       }
@@ -345,7 +347,7 @@ function computeDisplay(rangeStartUTC, rangeEndUTC){
       const code = baseMapByPerson.get(p.n).get(hISO) || "";
 
       if(isReserve(code)){
-        holOnDate.get(p.n).add(hISO);      // R never works holiday
+        holOnDate.get(p.n).add(hISO);      // R never works holiday -> HOL that day
         continue;
       }
       if(isOff(code)){
@@ -379,7 +381,6 @@ function computeDisplay(rangeStartUTC, rangeEndUTC){
     }
   }
 
-  // display maps
   const displayByPerson = new Map();
   for(const p of PEOPLE){
     const baseM = baseMapByPerson.get(p.n);
@@ -425,7 +426,7 @@ function render(){
   const months=+document.getElementById("showMonths").value;
 
   const rangeStartUTC = makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth(), 1);
-  const rangeEndUTC   = addDaysUTC(makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth()+12, 1), 240);
+  const rangeEndUTC   = addDaysUTC(makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth()+12, 1), 260);
 
   const computed = computeDisplay(rangeStartUTC, rangeEndUTC);
 
@@ -448,7 +449,7 @@ function render(){
 
     const t=document.createElement("table");
 
-    // day numbers
+    // day numbers (header row 1)
     let tr=document.createElement("tr");
     tr.className="hdrRow";
     tr.innerHTML = `<th class="name">NAME</th>`;
@@ -457,7 +458,7 @@ function render(){
     }
     t.appendChild(tr);
 
-    // day-of-week row
+    // day-of-week (header row 2)
     tr=document.createElement("tr");
     tr.className="hdrRow";
     tr.innerHTML = `<th class="name"></th>`;
@@ -468,10 +469,25 @@ function render(){
     }
     t.appendChild(tr);
 
+    // HOL markers (header row 3)  <-- THIS MAKES HOLIDAYS ALWAYS VISIBLE
+    tr=document.createElement("tr");
+    tr.className="hdrRow";
+    tr.innerHTML = `<th class="name"></th>`;
+    for(let day=1; day<=daysInMonth; day++){
+      const dt = makeUTC(y,m,day);
+      const di = isoUTC(dt);
+      if(HOLIDAYS_2026.has(di)){
+        tr.innerHTML += `<th class="holHead">HOL</th>`;
+      } else {
+        tr.innerHTML += `<th></th>`;
+      }
+    }
+    t.appendChild(tr);
+
     // people rows
-    PEOPLE.forEach((ppl, i)=>{
+    PEOPLE.forEach((ppl, pi)=>{
       const r=document.createElement("tr");
-      r.className = (i%2===0) ? "r2" : "r1";
+      r.className = (pi%2===0) ? "r2" : "r1";
       r.innerHTML = `<td class="name">${ppl.n}</td>`;
 
       const dispM = computed.displayByPerson.get(ppl.n);
@@ -491,7 +507,7 @@ function render(){
           td.classList.add("hol");
           td.textContent="HOL";
         } else {
-          td.textContent=base; // show the actual tour (B stays B for workers on holiday)
+          td.textContent=base; // keep A/B/C shown for workers on the holiday
         }
 
         r.appendChild(td);
