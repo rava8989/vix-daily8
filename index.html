@@ -1,516 +1,561 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VIX Strategy Helper – 2026</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pure Schedule – 2026 (HOL Fix + Visible Holidays)</title>
 
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({ startOnLoad: true });
-  </script>
+<style>
+:root{
+  --grid:#6a6a6a;
 
-  <style>
-    /* ──────────────────────────────────────────────── */
-    /* Your original CSS – unchanged except one addition */
-    /* ──────────────────────────────────────────────── */
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: row;
-    }
-    /* ... rest of your CSS remains exactly the same ... */
+  --hdr9:#1a1a1a;   /* header rows */
+  --sun7:#4d4d4d;   /* Sunday column */
+  --sat5:#7a7a7a;   /* Saturday column */
+  --wk:#f6f6f6;     /* weekday base */
 
-    /* New warning style */
-    .schedule-warning {
-      background: #fff3cd;
-      color: #856404;
-      padding: 12px;
-      margin: 12px;
-      border-radius: 6px;
-      border: 1px solid #ffeeba;
-      font-weight: bold;
-      text-align: center;
-    }
-  </style>
+  --row2:#e6e6e6;
+  --row1:#f0f0f0;
+
+  --holiday:#b30000;
+  --select:#fff3a0; /* yellow row highlight */
+}
+
+body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#fff; }
+
+header{
+  position:sticky; top:0; z-index:20;
+  background:#fff;
+  border-bottom:2px solid var(--grid);
+  padding:8px;
+}
+
+.controls{
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+}
+
+select,input,button{
+  padding:6px 8px;
+  font-size:14px;
+  border:2px solid var(--grid);
+  border-radius:8px;
+  background:#fff;
+}
+button{ cursor:pointer }
+
+.wrap{ padding:8px; }
+
+.panel{
+  border:2px solid var(--grid);
+  border-radius:10px;
+  margin-bottom:12px;
+  overflow:hidden;
+}
+
+.monthHeader{
+  background:var(--hdr9);
+  color:#fff;
+  padding:8px 12px;
+  font-weight:900;
+  text-transform:uppercase;
+  font-size:14px;
+}
+
+.scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+table{
+  border-collapse:collapse;
+  font-family:ui-monospace,Menlo,Consolas,monospace;
+  font-size:12px;
+  width:max-content;
+  min-width:100%;
+}
+
+th,td{
+  border:1px solid var(--grid);
+  text-align:center;
+  padding:0;
+  height:28px;
+  min-width:34px;
+  font-weight:900;
+}
+
+/* sticky NAME */
+th.name, td.name{
+  position:sticky;
+  left:0;
+  z-index:6;
+  text-align:left;
+  padding:0 8px;
+  min-width:190px;
+  font-family:system-ui;
+  cursor:pointer;
+}
+
+/* column colors */
+.wkCol{ background:var(--wk) !important; color:#111; }
+.satCol{ background:var(--sat5) !important; color:#111; }
+.sunCol{ background:var(--sun7) !important; color:#fff; }
+
+/* row striping – weekday cells only */
+tr.r2 td.wkCol{ background:var(--row2) !important; }
+tr.r1 td.wkCol{ background:var(--row1) !important; }
+tr.r2 td.name{ background:var(--row2) !important; }
+tr.r1 td.name{ background:var(--row1) !important; }
+
+/* header rows */
+tr.hdrRow th{
+  background:var(--hdr9) !important;
+  color:#fff !important;
+}
+tr.hdrRow th.name{ background:var(--hdr9) !important; }
+
+/* HOL cell */
+td.hol{ color:var(--holiday) !important; font-weight:1000; }
+
+/* header HOL marker */
+th.holHead{
+  color: var(--holiday) !important;
+  background: var(--hdr9) !important;
+  font-weight:1000;
+}
+
+/* SELECTED ROW (overrides striping + weekend colors) */
+tr.selected td.wkCol,
+tr.selected td.satCol,
+tr.selected td.sunCol,
+tr.selected td.name{
+  background: var(--select) !important;
+  color:#000 !important;
+}
+/* keep HOL red even when selected */
+tr.selected td.hol{
+  color: var(--holiday) !important;
+}
+
+@media (max-width:700px){
+  th.name, td.name{ min-width:150px; }
+  table{ font-size:11px; }
+}
+</style>
 </head>
 
 <body>
-
-  <div class="sidebar">
-    <div class="schedule-warning">
-      Calendar data valid for 2026 only.<br>
-      After Dec 31, 2026 signals may be incorrect!
-    </div>
-
-    <details id="scheduleDetails">
-      <summary><strong>Schedules 2026</strong></summary>
-
-      <h2>CPI Schedule</h2>
-      <ul id="cpiSchedule"></ul>
-
-      <h2>Fed Day Schedule</h2>
-      <ul id="fedSchedule"></ul>
-
-      <h2>OPEX Days</h2>
-      <ul id="opexSchedule"></ul>
-
-      <h2>Market Holidays</h2>
-      <ul id="holidaySchedule"></ul>
-
-      <h2>VIX Expiration</h2>
-      <ul id="vixExpirySchedule"></ul>
-    </details>
+<header>
+  <div class="controls">
+    <label>Start Month <input id="startMonth" type="month"></label>
+    <label>Show Months
+      <select id="showMonths">
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </label>
+    <button id="prev">◀</button>
+    <button id="next">▶</button>
+    <button id="today">This Month</button>
   </div>
+</header>
 
-  <div class="main">
+<div class="wrap" id="wrap"></div>
 
-    <div class="calcRow">
-      <div class="winrateBox">
-        <h3>Win rate override (previous day)</h3>
-        <label>
-          <input type="checkbox" id="winrate90" />
-          M8BF win rate > 90%
-        </label>
-        <label>
-          <input type="checkbox" id="winrate0" />
-          M8BF win rate = 0%
-        </label>
-      </div>
+<script>
+/* ================= BASE DATA ================= */
 
-      <div class="calculator">
-        <h1>VIX Calculator</h1>
+const LOOP = 42;
 
-        <label>VIX Today’s Open:
-          <input type="number" id="todayOpen" step="0.01" min="0" max="100" placeholder="e.g. 18.45" />
-        </label>
+const SLOTS = {
+1:["R","R","RDO","RDO","RDO","MDO","C","C/A","C","C","C","C","RDO","RDO","B","B","B","B","B","B","RDO","RDO","A","A","A","A","A/C","A","MDO","RDO","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R"],
+2:["C/A","C","C","C","C","RDO","RDO","B","B","B","B","B","B","RDO","RDO","A","A","A","A","A/C","A","MDO","RDO","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","RDO","MDO","C"],
+3:["B","B","B","B","B","B","RDO","RDO","A","A","A","A","A/C","A","MDO","RDO","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","RDO","MDO","C","C/A","C","C","C","C","RDO","RDO"],
+4:["RDO","A","A","A","A","A/C","A","MDO","RDO","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","RDO","MDO","C","C/A","C","C","C","C","RDO","RDO","B","B","B","B","B","B","RDO"],
+5:["MDO","RDO","RDO","RDO","B","B","B","B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","RDO","MDO","C","C/A","C","C","C","C","RDO","RDO","B","B","B","B","B","B","RDO","RDO","A","A","A","A","A/C","A"],
+6:["B","B","RDO","RDO","R","R","R","R","R","RDO","RDO","RDO","MDO","C","C/A","C","C","C","C","RDO","RDO","B","B","B","B","B","B","RDO","RDO","A","A","A","A","A/C","A","MDO","RDO","RDO","RDO","B","B","B"]
+};
 
-        <label>VIX Yesterday’s Open:
-          <input type="number" id="yesterdayOpen" step="0.01" min="0" max="100" placeholder="e.g. 19.20" />
-        </label>
+const PEOPLE=[
+ {n:"Kingston, Joseph C.",s:1},
+ {n:"Rodriguez, Roger",s:1},
+ {n:"Joseph, George R",s:2},
+ {n:"Ramnarine, Ashram",s:2},
+ {n:"Segovia, Eduardo M",s:3},
+ {n:"Victoria, Robert",s:3},
+ {n:"Bouaziz, Abdelghani",s:4},
+ {n:"Gragossian, Alan",s:4},
+ {n:"Handel, Joseph",s:5},
+ {n:"Rakhmanov, Ravshan",s:5},
+ {n:"Rodriguez, Alexander",s:6},
+ {n:"Svenjak, Mark",s:6}
+];
 
-        <label>VIX Yesterday’s Close:
-          <input type="number" id="yesterdayClose" step="0.01" min="0" max="100" placeholder="e.g. 20.10" />
-        </label>
+/* ===== FINAL HOLIDAYS – 2026 ===== */
+const HOLIDAYS_2026 = new Set([
+  "2026-01-01",
+  "2026-01-19",
+  "2026-02-16",
+  "2026-05-25",
+  "2026-06-19",
+  "2026-07-03",
+  "2026-07-06",
+  "2026-09-07",
+  "2026-10-12",
+  "2026-11-11",
+  "2026-11-26",
+  "2026-11-27",
+  "2026-12-25"
+]);
 
-        <button onclick="calculateStrategy()">Calculate</button>
-      </div>
-    </div>
+/* ================= UTC UTIL (NO TIMEZONE SHIFT) ================= */
 
-    <!-- rest of your HTML structure remains the same -->
+const pad=n=>String(n).padStart(2,"0");
+function makeUTC(y,m,d){ return new Date(Date.UTC(y,m,d)); }
+function isoUTC(d){ return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`; }
+function addDaysUTC(d,n){ return new Date(d.getTime()+n*86400000); }
+function dowUTC(d){ return d.getUTCDay(); } // 0 Sun..6 Sat
+function idx(i){ return ((i%LOOP)+LOOP)%LOOP; }
 
-    <div style="margin-top: 10px; font-size: 14px; text-align: center;">
-      <p>
-        <strong>Overnight VIX Drop:</strong>
-        <span id="overnightDropDisplay">—</span>
-        <span id="cpiTag" class="tag" style="display:none;">CPI day</span>
-        <span id="fedTag" class="tag" style="display:none;">Fed day</span>
-        <span id="opexTag" class="tag" style="display:none;">OPEX</span>
-        <span id="postOpexTag" class="tag" style="display:none;">Post-OPEX</span>
-        <span id="postHolidayTag" class="tag" style="display:none;">Post-Holiday</span>
-        <span id="eomTag" class="tag" style="display:none;">EOM</span>
-      </p>
-      <p>
-        <strong>Yesterday’s VIX Open − Today’s VIX Open:</strong>
-        <span id="openDiffDisplay">—</span>
-        <span id="openDiffNote" class="tag" style="display:none;">ignored on CPI day</span>
-      </p>
-    </div>
+const ANCHOR_UTC_MS = Date.UTC(2026,0,1);
 
-    <!-- ... rest of your HTML (recBlock, flowchart, strategy-doc etc.) unchanged ... -->
+function baseCode(slot, dateUTC){
+  const di = Math.floor((dateUTC.getTime() - ANCHOR_UTC_MS) / 86400000);
+  return SLOTS[slot][idx(di)];
+}
 
-  </div>
+function isWeekendUTC(d){ const w=dowUTC(d); return w===0 || w===6; }
+function isWeekdayUTC(d){ const w=dowUTC(d); return w>=1 && w<=5; }
+function isDouble(code){ return String(code).includes("/"); }
+function isACWork(code){ return code==="A" || code==="C" || isDouble(code); }
+function isOff(code){ return code==="RDO" || code==="MDO"; }
+function isReserve(code){ return code==="R"; }
 
-  <script>
-    // ────────────────────────────────────────────────
-    //  HELPER: convert "January 13, 2026" → Date object
-    // ────────────────────────────────────────────────
-    function parseUSDateLong(str) {
-      try {
-        const [monthName, day, year] = str.split(/[\s,]+/);
-        const monthNames = {
-          "January":0, "February":1, "March":2, "April":3, "May":4, "June":5,
-          "July":6, "August":7, "September":8, "October":9, "November":10, "December":11
-        };
-        const m = monthNames[monthName];
-        if (m === undefined) return null;
-        const d = parseInt(day, 10);
-        const y = parseInt(year, 10);
-        if (isNaN(d) || isNaN(y)) return null;
-        return new Date(y, m, d);
-      } catch {
-        return null;
+function colClassForDow(w){ return w===0?"sunCol":w===6?"satCol":"wkCol"; }
+
+/* contiguous B-run includes weekend? */
+function bRunIncludesWeekend(dateUTC, baseMap){
+  const di = isoUTC(dateUTC);
+  if(baseMap.get(di) !== "B") return false;
+
+  let s = dateUTC;
+  for(let i=0;i<14;i++){
+    const p = addDaysUTC(s, -1);
+    if(baseMap.get(isoUTC(p)) !== "B") break;
+    s = p;
+  }
+  let e = dateUTC;
+  for(let i=0;i<14;i++){
+    const n = addDaysUTC(e, 1);
+    if(baseMap.get(isoUTC(n)) !== "B") break;
+    e = n;
+  }
+  for(let cur=s; cur.getTime()<=e.getTime(); cur=addDaysUTC(cur,1)){
+    const w = dowUTC(cur);
+    if(w===0 || w===6) return true;
+  }
+  return false;
+}
+
+/* ================= HOLIDAY LOGIC =================
+We ALWAYS show holidays in the HEADER (HOL markers).
+For PEOPLE cells:
+- "HOL" shows when the person is OFF (or credited HOL day)
+- If they WORK the holiday, the cell stays A/B/C/etc and they get credit later.
+*/
+function computeDisplay(rangeStartUTC, rangeEndUTC){
+  const baseMapByPerson = new Map();
+  for(const p of PEOPLE){
+    const m=new Map();
+    for(let d=rangeStartUTC; d.getTime()<=rangeEndUTC.getTime(); d=addDaysUTC(d,1)){
+      m.set(isoUTC(d), baseCode(p.s, d));
+    }
+    baseMapByPerson.set(p.n, m);
+  }
+
+  const holOnDate = new Map();
+  const credits   = new Map();
+  for(const p of PEOPLE){
+    holOnDate.set(p.n, new Set());
+    credits.set(p.n, 0);
+  }
+
+  function placeCredit(name, fromISO){
+    const baseM = baseMapByPerson.get(name);
+    const holS  = holOnDate.get(name);
+
+    let d = addDaysUTC(new Date(fromISO+"T00:00:00Z"), 1);
+    for(let i=0;i<260;i++){
+      const di=isoUTC(d);
+      const code=baseM.get(di)||"";
+      if(HOLIDAYS_2026.has(di)) { d = addDaysUTC(d,1); continue; } // never place on a holiday date
+      if(isWeekdayUTC(d) && code==="B" && !holS.has(di)){
+        holS.add(di);
+        return true;
+      }
+      d = addDaysUTC(d,1);
+    }
+    return false;
+  }
+
+  function pickBWorkers(holidayDateUTC){
+    const hISO = isoUTC(holidayDateUTC);
+    const dow = dowUTC(holidayDateUTC);
+    const candidates = PEOPLE.filter(p => baseMapByPerson.get(p.n).get(hISO)==="B");
+
+    if(isWeekendUTC(holidayDateUTC)){
+      return new Set(candidates.map(p=>p.n)); // weekend holiday: base-B covers
+    }
+
+    const wantWeekendGroup = (dow===1 || dow===2 || dow===4 || dow===5); // Mon Tue Thu Fri -> Thu–Tue group
+    const wantWeekGroup    = (dow===3); // Wed -> Mon–Fri group
+
+    const match=[], other=[];
+    for(const p of candidates){
+      const incWeekend = bRunIncludesWeekend(holidayDateUTC, baseMapByPerson.get(p.n));
+      if(wantWeekGroup){
+        (incWeekend ? other : match).push(p);
+      } else if(wantWeekendGroup){
+        (incWeekend ? match : other).push(p);
+      } else {
+        match.push(p);
       }
     }
 
-    // ────────────────────────────────────────────────
-    //  SCHEDULES – now stored with YYYY-MM-DD keys
-    // ────────────────────────────────────────────────
-    function dateToYYYYMMDD(d) {
-      if (!d || isNaN(d)) return null;
-      return d.toISOString().slice(0,10);
+    const sort = arr => arr.slice().sort((a,b)=> (a.s-b.s) || a.n.localeCompare(b.n));
+    const pick=[];
+    for(const p of sort(match)) if(pick.length<2) pick.push(p);
+    for(const p of sort(other)) if(pick.length<2) pick.push(p);
+    if(pick.length<2){
+      for(const p of sort(candidates)){
+        if(pick.some(x=>x.n===p.n)) continue;
+        pick.push(p);
+        if(pick.length===2) break;
+      }
+    }
+    return new Set(pick.map(p=>p.n));
+  }
+
+  // holiday list in range
+  const holidayISOs=[];
+  for(let d=rangeStartUTC; d.getTime()<=rangeEndUTC.getTime(); d=addDaysUTC(d,1)){
+    const di=isoUTC(d);
+    if(HOLIDAYS_2026.has(di)) holidayISOs.push(di);
+  }
+
+  for(const hISO of holidayISOs){
+    const hDateUTC = new Date(hISO+"T00:00:00Z");
+    const bWorkers = pickBWorkers(hDateUTC);
+
+    for(const p of PEOPLE){
+      const code = baseMapByPerson.get(p.n).get(hISO) || "";
+
+      if(isReserve(code)){
+        holOnDate.get(p.n).add(hISO);      // R never works holiday -> HOL that day
+        continue;
+      }
+      if(isOff(code)){
+        credits.set(p.n, credits.get(p.n)+1);
+        continue;
+      }
+      if(isACWork(code)){
+        credits.set(p.n, credits.get(p.n)+1);
+        continue;
+      }
+      if(code==="B"){
+        if(bWorkers.has(p.n)){
+          credits.set(p.n, credits.get(p.n)+1); // works holiday
+        } else {
+          holOnDate.get(p.n).add(hISO);         // off holiday
+        }
+        continue;
+      }
+      credits.set(p.n, credits.get(p.n)+1);
     }
 
-    const schedules = {
-      cpi: [
-        "2026-01-13","2026-02-13","2026-03-11","2026-04-10","2026-05-12","2026-06-10",
-        "2026-07-14","2026-08-12","2026-09-11","2026-10-14","2026-11-10","2026-12-10"
-      ].map(d => new Date(d)),
+    // place credits after this holiday
+    for(const p of PEOPLE){
+      let c = credits.get(p.n);
+      while(c>0){
+        const placed = placeCredit(p.n, hISO);
+        if(!placed) break;
+        c--;
+      }
+      credits.set(p.n, c);
+    }
+  }
 
-      fed: [
-        "2026-01-28","2026-03-18","2026-04-29","2026-06-17","2026-07-29",
-        "2026-09-16","2026-10-28","2026-12-09"
-      ].map(d => new Date(d)),
+  const displayByPerson = new Map();
+  for(const p of PEOPLE){
+    const baseM = baseMapByPerson.get(p.n);
+    const holS  = holOnDate.get(p.n);
+    const disp  = new Map();
+    for(let d=rangeStartUTC; d.getTime()<=rangeEndUTC.getTime(); d=addDaysUTC(d,1)){
+      const di=isoUTC(d);
+      disp.set(di, holS.has(di) ? "HOL" : (baseM.get(di)||""));
+    }
+    displayByPerson.set(p.n, disp);
+  }
 
-      opex: [
-        "2026-01-16","2026-02-20","2026-03-20","2026-04-17","2026-05-15","2026-06-18",
-        "2026-07-17","2026-08-21","2026-09-18","2026-10-16","2026-11-20","2026-12-18"
-      ].map(d => new Date(d)),
+  return { baseMapByPerson, displayByPerson };
+}
 
-      holidays: [
-        "2026-01-01","2026-01-19","2026-02-16","2026-04-03","2026-05-25",
-        "2026-06-19","2026-07-03","2026-09-07","2026-11-26","2026-12-25"
-      ].map(d => new Date(d)),
+/* ================= RENDER ================= */
 
-      vixExpiry: [
-        "2026-01-21","2026-02-18","2026-03-18","2026-04-15","2026-05-20","2026-06-17",
-        "2026-07-15","2026-08-19","2026-09-16","2026-10-21","2026-11-18","2026-12-16"
-      ].map(d => new Date(d))
+const wrap=document.getElementById("wrap");
+const startMonthEl=document.getElementById("startMonth");
+
+function currentMonthUTC(){
+  const now = new Date();
+  return makeUTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+}
+
+let startUTC = currentMonthUTC(); // ALWAYS start from current month
+
+function setMonthInput(){
+  startMonthEl.value = `${startUTC.getUTCFullYear()}-${pad(startUTC.getUTCMonth()+1)}`;
+}
+
+function enableRowSelection(){
+  document.querySelectorAll("td.name").forEach(cell=>{
+    cell.onclick=()=>{
+      document.querySelectorAll("tr.selected").forEach(r=>r.classList.remove("selected"));
+      cell.closest("tr").classList.add("selected");
     };
+  });
+}
 
-    // ────────────────────────────────────────────────
-    //  RENDER SCHEDULES (now using YYYY-MM-DD display)
-    // ────────────────────────────────────────────────
-    function renderSchedule(dates, ulId) {
-      const ul = document.getElementById(ulId);
-      ul.innerHTML = '';
-      dates.forEach(d => {
-        if (!d || isNaN(d)) return;
-        const li = document.createElement('li');
-        li.textContent = d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
-        li.setAttribute('data-date', dateToYYYYMMDD(d));
-        ul.appendChild(li);
-      });
+function render(){
+  wrap.innerHTML="";
+  const months=+document.getElementById("showMonths").value;
+
+  const rangeStartUTC = makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth(), 1);
+  const rangeEndUTC   = addDaysUTC(makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth()+12, 1), 260);
+
+  const computed = computeDisplay(rangeStartUTC, rangeEndUTC);
+
+  for(let i=0;i<months;i++){
+    const monthUTC = makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth()+i, 1);
+    const y = monthUTC.getUTCFullYear();
+    const m = monthUTC.getUTCMonth();
+    const daysInMonth = makeUTC(y, m+1, 0).getUTCDate();
+
+    const panel=document.createElement("div");
+    panel.className="panel";
+
+    const header=document.createElement("div");
+    header.className="monthHeader";
+    header.textContent = `${monthUTC.toLocaleString("default",{month:"long", timeZone:"UTC"})} ${y}`;
+    panel.appendChild(header);
+
+    const sc=document.createElement("div");
+    sc.className="scroll";
+
+    const t=document.createElement("table");
+
+    // day numbers (header row 1)
+    let tr=document.createElement("tr");
+    tr.className="hdrRow";
+    tr.innerHTML = `<th class="name">NAME</th>`;
+    for(let day=1; day<=daysInMonth; day++){
+      tr.innerHTML += `<th>${day}</th>`;
     }
+    t.appendChild(tr);
 
-    renderSchedule(schedules.cpi, 'cpiSchedule');
-    renderSchedule(schedules.fed, 'fedSchedule');
-    renderSchedule(schedules.opex, 'opexSchedule');
-    renderSchedule(schedules.holidays, 'holidaySchedule');
-    renderSchedule(schedules.vixExpiry, 'vixExpirySchedule');
-
-    // ────────────────────────────────────────────────
-    //  DATE & TRADING DAY HELPERS (improved)
-    // ────────────────────────────────────────────────
-    const today = new Date();
-
-    function isWeekend(d)    { return d.getDay() === 0 || d.getDay() === 6; }
-    function isHoliday(d)    { return schedules.holidays.some(h => dateToYYYYMMDD(h) === dateToYYYYMMDD(d)); }
-    function isTradingDay(d) { return !isWeekend(d) && !isHoliday(d); }
-
-    function nextTradingDay(d) {
-      let nd = new Date(d);
-      do { nd.setDate(nd.getDate() + 1); } while (!isTradingDay(nd));
-      return nd;
+    // day-of-week (header row 2)
+    tr=document.createElement("tr");
+    tr.className="hdrRow";
+    tr.innerHTML = `<th class="name"></th>`;
+    const dows=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    for(let day=1; day<=daysInMonth; day++){
+      const dt = makeUTC(y,m,day);
+      tr.innerHTML += `<th>${dows[dowUTC(dt)]}</th>`;
     }
+    t.appendChild(tr);
 
-    function prevTradingDay(d) {
-      let pd = new Date(d);
-      do { pd.setDate(pd.getDate() - 1); } while (!isTradingDay(pd));
-      return pd;
-    }
-
-    function isCpiDay()       { return schedules.cpi.some(d => dateToYYYYMMDD(d) === dateToYYYYMMDD(today)); }
-    function isFedDay()       { return schedules.fed.some(d => dateToYYYYMMDD(d) === dateToYYYYMMDD(today)); }
-    function isOpexDay()      { return schedules.opex.some(d => dateToYYYYMMDD(d) === dateToYYYYMMDD(today)); }
-    function isVixExpiryDay() { return schedules.vixExpiry.some(d => dateToYYYYMMDD(d) === dateToYYYYMMDD(today)); }
-
-    function isPostHoliday() {
-      return schedules.holidays.some(h => dateToYYYYMMDD(nextTradingDay(h)) === dateToYYYYMMDD(today));
-    }
-
-    function isPostOpexDay() {
-      return schedules.opex.some(o => dateToYYYYMMDD(nextTradingDay(o)) === dateToYYYYMMDD(today));
-    }
-
-    function isPostOpexMonday() {
-      return isPostOpexDay() && today.getDay() === 1;
-    }
-
-    function isFirstTradingDayOfMonth(d = today) {
-      const prev = prevTradingDay(d);
-      return prev.getMonth() !== d.getMonth();
-    }
-
-    function isLastTradingDayOfMonth(d = today) {
-      const next = nextTradingDay(d);
-      return next.getMonth() !== d.getMonth();
-    }
-
-    function isEomMinusN(n, d = today) {
-      let target = new Date(d);
-      for (let i = 0; i < n; i++) {
-        target = prevTradingDay(target);
-      }
-      return dateToYYYYMMDD(target) === dateToYYYYMMDD(d);
-    }
-
-    function isFirstTradingMondayOfMonth(d = today) {
-      let check = new Date(d.getFullYear(), d.getMonth(), 1);
-      while (!isTradingDay(check)) check.setDate(check.getDate() + 1);
-      while (check.getDay() !== 1) check = nextTradingDay(check);
-      return dateToYYYYMMDD(check) === dateToYYYYMMDD(d);
-    }
-
-    // ────────────────────────────────────────────────
-    //  WIN RATE CHECKBOXES – mutual exclusion + reset on load
-    // ────────────────────────────────────────────────
-    const winrate90 = document.getElementById('winrate90');
-    const winrate0  = document.getElementById('winrate0');
-
-    function enforceMutualExclusion(changed) {
-      if (changed === '90' && winrate90.checked) winrate0.checked = false;
-      if (changed === '0'  && winrate0.checked)  winrate90.checked = false;
-    }
-
-    winrate90.addEventListener('change', () => enforceMutualExclusion('90'));
-    winrate0.addEventListener('change',  () => enforceMutualExclusion('0'));
-
-    // Reset on page load (safety)
-    winrate90.checked = false;
-    winrate0.checked  = false;
-
-    // ────────────────────────────────────────────────
-    //  MAIN CALCULATOR LOGIC (updated date checks)
-    // ────────────────────────────────────────────────
-    function calculateStrategy() {
-      const todayOpenVal   = parseFloat(document.getElementById('todayOpen').value);
-      const yOpenVal       = parseFloat(document.getElementById('yesterdayOpen').value);
-      const yCloseVal      = parseFloat(document.getElementById('yesterdayClose').value);
-
-      if (isNaN(todayOpenVal) || todayOpenVal < 0 || isNaN(yCloseVal) || yCloseVal < 0) {
-        alert("Please enter valid positive VIX values for Today’s Open and Yesterday’s Close.");
-        return;
-      }
-
-      const isCpi = isCpiDay();
-      if (!isCpi && (isNaN(yOpenVal) || yOpenVal < 0)) {
-        alert("On non-CPI days, please also enter Yesterday’s Open.");
-        return;
-      }
-
-      const winHigh  = winrate90.checked;
-      const winZero  = winrate0.checked;
-
-      const now       = new Date();
-      const isMonday  = now.getDay() === 1;
-      const isFriday  = now.getDay() === 5;
-      const isWednesday = now.getDay() === 3;
-
-      const nmToday     = isFirstTradingDayOfMonth();
-      const nmMonday    = isFirstTradingMondayOfMonth();
-      const eomToday    = isLastTradingDayOfMonth();
-      const eomM1       = isEomMinusN(1);
-      const eomM2       = isEomMinusN(2);
-      const postOpex    = isPostOpexDay();
-      const postHoliday = isPostHoliday();
-      const postOpexMon = isPostOpexMonday();
-      const vixExpire   = isVixExpiryDay();
-      const opexToday   = isOpexDay();
-      const opexM1      = schedules.opex.some(o => dateToYYYYMMDD(prevTradingDay(o)) === dateToYYYYMMDD(today));
-
-      // UI tags
-      document.getElementById('cpiTag').style.display       = isCpi       ? 'inline-block' : 'none';
-      document.getElementById('fedTag').style.display       = isFedDay()  ? 'inline-block' : 'none';
-      document.getElementById('opexTag').style.display      = opexToday   ? 'inline-block' : 'none';
-      document.getElementById('postOpexTag').style.display  = postOpex    ? 'inline-block' : 'none';
-      document.getElementById('postHolidayTag').style.display = postHoliday ? 'inline-block' : 'none';
-      document.getElementById('eomTag').style.display       = eomToday    ? 'inline-block' : 'none';
-
-      const overnightDrop = yCloseVal - todayOpenVal;
-      const openToOpen    = isCpi ? NaN : (yOpenVal - todayOpenVal);
-
-      document.getElementById('overnightDropDisplay').textContent = overnightDrop.toFixed(2);
-      document.getElementById('openDiffDisplay').textContent =
-        isCpi ? '—' : (isNaN(openToOpen) ? '—' : openToOpen.toFixed(2));
-      document.getElementById('openDiffNote').style.display = isCpi ? 'inline-block' : 'none';
-
-      let rec = "";
-      let bg = "#eee";
-      let crossed = false;
-      let postOpexNote = "";
-
-      if (isCpi) {
-        if (overnightDrop > 0) {
-          rec = "Long ATM Call @ 9:32 AM (CPI day) — Max entry premium $13";
-          bg = "#61f7d6";
-        } else {
-          rec = "No trade (CPI day — VIX up)";
-          bg = "#eee";
-          crossed = true;
-        }
+    // HOL markers (header row 3)  <-- THIS MAKES HOLIDAYS ALWAYS VISIBLE
+    tr=document.createElement("tr");
+    tr.className="hdrRow";
+    tr.innerHTML = `<th class="name"></th>`;
+    for(let day=1; day<=daysInMonth; day++){
+      const dt = makeUTC(y,m,day);
+      const di = isoUTC(dt);
+      if(HOLIDAYS_2026.has(di)){
+        tr.innerHTML += `<th class="holHead">HOL</th>`;
       } else {
-        // Core logic
-        if (overnightDrop > 0.65) {
-          rec = "GXBF @ 9:36 AM";
-          bg = "#fff399";
-        } else if (openToOpen > 1.4) {
-          rec = "M8 Butterfly";
-          bg = "#b49aff";
-        } else if (overnightDrop > 0.01 && overnightDrop <= 0.65) {
-          rec = "Straddle @ 9:32 AM";
-          bg = "#61f7d6";
-        } else {
-          rec = "M8 Butterfly";
-          bg = "#b49aff";
-        }
-
-        // Special cases
-        if (rec.includes("M8 Butterfly")) {
-          if (isFedDay()) {
-            rec = "No M8BF (Fed day)";
-            bg = "#eee";
-            crossed = true;
-          } else if (postHoliday) {
-            rec = "M8BF post holiday → prefer PM entry";
-            bg = "#b49aff";
-          }
-        }
-
-        // NM Straddle override (except Mondays)
-        if (nmToday && !isMonday && (rec.includes("M8 Butterfly") || rec.includes("No M8BF"))) {
-          rec = "NM Straddle @ 9:32 AM";
-          bg = "#61f7d6";
-          crossed = false;
-        }
-
-        // EOM Straddle
-        if (eomToday) {
-          rec = "Straddle @ 9:32 AM (EOM Straddle)";
-          bg = "#61f7d6";
-          crossed = false;
-        }
-
-        // Wednesday revert to M8BF
-        if (isWednesday && !isFedDay() && !eomToday && !nmToday && rec.includes("Straddle")) {
-          rec = "M8 Butterfly";
-          bg = "#b49aff";
-        }
-
-        // No Straddle on OPEX
-        if (opexToday && rec.includes("Straddle")) {
-          rec = "No Straddle (OPEX day)";
-          bg = "#eee";
-          crossed = true;
-        }
-
-        // Post-OPEX Monday note
-        if (postOpexMon && rec.includes("M8 Butterfly")) {
-          postOpexNote = " (use afternoon times on post-OPEX Mondays)";
-        }
-
-        // Win-rate overrides
-        if (winZero) {
-          if (!rec.includes("No ")) {   // not already blocked
-            rec = rec.includes("Straddle") ? rec : "Straddle @ 9:32 AM (prior day 0% M8BF)";
-            bg = "#61f7d6";
-            crossed = false;
-          }
-        } else if (winHigh) {
-          if (rec === "Straddle @ 9:32 AM") {
-            rec = "M8 Butterfly (prior day >90% M8BF)";
-            bg = "#b49aff";
-            crossed = false;
-          }
-        }
-      }
-
-      // Post-OPEX +1 override (strongest priority)
-      if (postOpex && (rec.includes("M8") || rec.includes("Straddle"))) {
-        rec = "GXBF @ 9:36 AM (OPEX+1)";
-        bg = "#fff399";
-        crossed = false;
-        postOpexNote = "";
-      }
-
-      // Final output
-      const mainRec = document.getElementById("mainRec");
-      mainRec.innerHTML = crossed ? `<span class="crossed">${rec}${postOpexNote}</span>` : `${rec}${postOpexNote}`;
-      document.getElementById("recBlock").style.backgroundColor = bg;
-
-      // BOBF logic
-      let bobfBlockReasons = [];
-      if (nmMonday)          bobfBlockReasons.push("NM Monday");
-      if (vixExpire)         bobfBlockReasons.push("VIX expiry");
-      if (opexToday)         bobfBlockReasons.push("OPEX");
-      if (opexM1)            bobfBlockReasons.push("OPEX-1");
-      if (eomM2)             bobfBlockReasons.push("EOM-2");
-      if (eomM1)             bobfBlockReasons.push("EOM-1");
-      if (todayOpenVal > 23) bobfBlockReasons.push("VIX > 23");
-
-      const bobfLine = document.getElementById("bobfLine");
-      if (bobfBlockReasons.length > 0) {
-        bobfLine.innerHTML = `<span class="crossed">No BOBF (${bobfBlockReasons.join(", ")})</span>`;
-      } else {
-        bobfLine.innerHTML = isFriday ? "BOBF (Friday version)" : "BOBF in play";
+        tr.innerHTML += `<th></th>`;
       }
     }
+    t.appendChild(tr);
 
-    // ────────────────────────────────────────────────
-    //  INIT
-    // ────────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', () => {
-      // Mobile collapse
-      const mq = window.matchMedia("(max-width: 900px)");
-      const details = document.getElementById("scheduleDetails");
-      const apply = () => mq.matches ? details.removeAttribute("open") : details.setAttribute("open","");
-      apply();
-      mq.addEventListener("change", apply);
+    // people rows
+    PEOPLE.forEach((ppl, pi)=>{
+      const r=document.createElement("tr");
+      r.className = (pi%2===0) ? "r2" : "r1";
+      r.innerHTML = `<td class="name">${ppl.n}</td>`;
 
-      // Today labels
-      function updateDateLabels() {
-        document.getElementById('todayDate').textContent = "Today: " + today.toLocaleDateString();
-        document.getElementById('dayLabel').textContent = tradingWeekdayOrdinalLabel(today);
-        document.getElementById('resultDayLabel').textContent = tradingWeekdayOrdinalLabel(today);
+      const dispM = computed.displayByPerson.get(ppl.n);
+      const baseM = computed.baseMapByPerson.get(ppl.n);
+
+      for(let day=1; day<=daysInMonth; day++){
+        const dt = makeUTC(y,m,day);
+        const di = isoUTC(dt);
+
+        const td=document.createElement("td");
+        td.className = colClassForDow(dowUTC(dt));
+
+        const base = baseM.get(di) || "";
+        const display = dispM.get(di) || base;
+
+        if(display==="HOL"){
+          td.classList.add("hol");
+          td.textContent="HOL";
+        } else {
+          td.textContent=base; // keep A/B/C shown for workers on the holiday
+        }
+
+        r.appendChild(td);
       }
 
-      updateDateLabels();
-
-      // Optional: re-run at midnight
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0,0,5,0);
-      setTimeout(() => {
-        location.reload(); // simplest way to refresh everything
-      }, tomorrow - Date.now());
+      t.appendChild(r);
     });
 
-    // Your original ordinal & trading weekday label functions can stay
-    // (I didn't change them – they seem fine for your use case)
-    function ordinal(n) {
-      const s = ["th","st","nd","rd"];
-      const v = n % 100;
-      return n + (s[(v-20)%10] || s[v] || s[0]);
-    }
+    sc.appendChild(t);
+    panel.appendChild(sc);
+    wrap.appendChild(panel);
+  }
 
-    function weekdayName(dow) {
-      return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][dow] || "";
-    }
+  enableRowSelection();
+}
 
-    function tradingWeekdayOrdinalLabel(date = new Date()) {
-      const dow = date.getDay();
-      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-      let count = 0;
-      for (let d = new Date(monthStart); d <= date; d.setDate(d.getDate() + 1)) {
-        if (!isTradingDay(d)) continue;
-        if (d.getDay() === dow) count++;
-      }
-      if (!isTradingDay(date)) return `${weekdayName(dow)} (market closed)`;
-      return `${ordinal(count)} ${weekdayName(dow)}`;
-    }
-  </script>
+/* ================= CONTROLS ================= */
+
+document.getElementById("showMonths").addEventListener("change", ()=>{ setMonthInput(); render(); });
+
+document.getElementById("prev").addEventListener("click", ()=>{
+  startUTC = makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth()-1, 1);
+  setMonthInput();
+  render();
+});
+
+document.getElementById("next").addEventListener("click", ()=>{
+  startUTC = makeUTC(startUTC.getUTCFullYear(), startUTC.getUTCMonth()+1, 1);
+  setMonthInput();
+  render();
+});
+
+document.getElementById("today").addEventListener("click", ()=>{
+  startUTC = currentMonthUTC();
+  setMonthInput();
+  render();
+});
+
+startMonthEl.addEventListener("change", (e)=>{
+  const [yy,mm] = e.target.value.split("-").map(Number);
+  startUTC = makeUTC(yy, mm-1, 1);
+  setMonthInput();
+  render();
+});
+
+/* init */
+setMonthInput();
+render();
+</script>
 </body>
 </html>
